@@ -1,7 +1,7 @@
 //! Extended Kalman filter with a constant-velocity motion model and a
 //! range-bearing radar update.
 
-use nalgebra::{Matrix2, Matrix2x4, Matrix4, Matrix4x2};
+use nalgebra::{Matrix2, Matrix2x4, Matrix4, Matrix4x2, Vector2};
 
 use crate::models::{wrap_angle, Radar, RadarMeas, State};
 
@@ -60,10 +60,11 @@ impl Ekf {
         self.p = f * self.p * f.transpose() + q;
     }
 
-    /// Fuse a radar measurement. Returns the normalised innovation squared
-    /// (NIS), or `None` if the update was skipped (target on top of the
-    /// sensor, or singular innovation covariance).
-    pub fn update_radar(&mut self, z: &RadarMeas, radar: &Radar) -> Option<f64> {
+    /// Linearised measurement model at the current estimate. The innovation
+    /// covariance depends on the track but not on the measurement, so it can
+    /// be computed once per track and reused for every candidate measurement.
+    /// Returns `None` if the target is on top of the sensor or `S` is singular.
+    pub fn measurement_model(&self, radar: &Radar) -> Option<MeasurementModel> {
         let dx = self.x[0] - radar.pos[0];
         let dy = self.x[1] - radar.pos[1];
         let r2 = dx * dx + dy * dy;
@@ -71,10 +72,6 @@ impl Ekf {
             return None;
         }
         let r = r2.sqrt();
-
-        let pred = radar.h(&self.x);
-        let y = nalgebra::Vector2::new(z.range - pred.range, wrap_angle(z.bearing - pred.bearing));
-
         let h = Matrix2x4::new(
             dx / r,
             dy / r,
@@ -91,24 +88,93 @@ impl Ekf {
             0.0,
             radar.sigma_b.powi(2),
         );
-
         let s = h * self.p * h.transpose() + rm;
         let s_inv = s.try_inverse()?;
-        let k: Matrix4x2<f64> = self.p * h.transpose() * s_inv;
+        Some(MeasurementModel {
+            pred: radar.h(&self.x),
+            h,
+            s,
+            s_inv,
+        })
+    }
 
-        self.x += k * y;
+    /// Innovation for a candidate measurement, without changing the state.
+    pub fn innovation(&self, z: &RadarMeas, radar: &Radar) -> Option<Innovation> {
+        Some(self.measurement_model(radar)?.innovation(z))
+    }
+
+    /// Apply a previously computed innovation. Returns the NIS.
+    pub fn update_with(&mut self, inn: &Innovation, radar: &Radar) -> f64 {
+        let rm = Matrix2::new(
+            radar.sigma_r.powi(2),
+            0.0, //
+            0.0,
+            radar.sigma_b.powi(2),
+        );
+        let k: Matrix4x2<f64> = self.p * inn.h.transpose() * inn.s_inv;
+        self.x += k * inn.y;
         // Joseph form keeps P symmetric positive semi-definite.
-        let i_kh = Matrix4::identity() - k * h;
+        let i_kh = Matrix4::identity() - k * inn.h;
         self.p = i_kh * self.p * i_kh.transpose() + k * rm * k.transpose();
+        inn.nis()
+    }
 
-        Some((y.transpose() * s_inv * y)[0])
+    /// Fuse a radar measurement. Returns the normalised innovation squared
+    /// (NIS), or `None` if the update was skipped (target on top of the
+    /// sensor, or singular innovation covariance).
+    pub fn update_radar(&mut self, z: &RadarMeas, radar: &Radar) -> Option<f64> {
+        let inn = self.innovation(z, radar)?;
+        Some(self.update_with(&inn, radar))
+    }
+}
+
+/// Per-track linearised measurement model; see [`Ekf::measurement_model`].
+#[derive(Debug, Clone, Copy)]
+pub struct MeasurementModel {
+    pub pred: RadarMeas,
+    pub h: Matrix2x4<f64>,
+    pub s: Matrix2<f64>,
+    pub s_inv: Matrix2<f64>,
+}
+
+impl MeasurementModel {
+    pub fn innovation(&self, z: &RadarMeas) -> Innovation {
+        Innovation {
+            y: Vector2::new(
+                z.range - self.pred.range,
+                wrap_angle(z.bearing - self.pred.bearing),
+            ),
+            h: self.h,
+            s: self.s,
+            s_inv: self.s_inv,
+        }
+    }
+}
+
+/// Result of comparing a measurement with a filter's prediction.
+#[derive(Debug, Clone, Copy)]
+pub struct Innovation {
+    pub y: Vector2<f64>,
+    pub h: Matrix2x4<f64>,
+    pub s: Matrix2<f64>,
+    pub s_inv: Matrix2<f64>,
+}
+
+impl Innovation {
+    /// Normalised innovation squared (squared Mahalanobis distance).
+    pub fn nis(&self) -> f64 {
+        (self.y.transpose() * self.s_inv * self.y)[0]
+    }
+
+    /// Natural log of the determinant of the innovation covariance.
+    pub fn ln_det_s(&self) -> f64 {
+        self.s.determinant().ln()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use nalgebra::Vector2;
 
     fn radar() -> Radar {
         Radar {

@@ -1,10 +1,13 @@
 //! Scenario simulation: a target driven by piecewise-constant random
 //! acceleration, matching the filter's process model.
 
-use rand::Rng;
-use rand_distr::{Distribution, Normal};
+use std::f64::consts::PI;
 
-use crate::models::State;
+use rand::seq::SliceRandom;
+use rand::Rng;
+use rand_distr::{Distribution, Normal, Poisson};
+
+use crate::models::{Radar, RadarMeas, State};
 
 /// Advance a state by `dt` with a random acceleration `(ax, ay)` held constant
 /// over the step.
@@ -36,6 +39,83 @@ pub fn simulate_trajectory<R: Rng + ?Sized>(
     out
 }
 
+/// Parameters of a multi-target radar scenario with missed detections and
+/// uniform clutter.
+#[derive(Debug, Clone)]
+pub struct ScenarioConfig {
+    pub radar: Radar,
+    pub dt: f64,
+    pub steps: usize,
+    pub n_targets: usize,
+    /// Standard deviation of target acceleration (m/s^2).
+    pub sigma_accel: f64,
+    /// Probability that a target in range is detected on a scan.
+    pub pd: f64,
+    /// Mean number of clutter returns per scan (Poisson), uniform over the
+    /// disc of radius `r_max` around the radar.
+    pub clutter_rate: f64,
+    pub r_max: f64,
+}
+
+/// One scan: the true target states and the (unlabelled, shuffled)
+/// measurements the radar reported.
+#[derive(Debug, Clone)]
+pub struct Scan {
+    pub truth: Vec<State>,
+    pub meas: Vec<RadarMeas>,
+}
+
+/// Simulate `steps` scans of `n_targets` targets present throughout.
+///
+/// Targets start 2-8 km from the radar at 15-35 m/s on random headings.
+pub fn simulate_scenario<R: Rng + ?Sized>(cfg: &ScenarioConfig, rng: &mut R) -> Vec<Scan> {
+    let starts: Vec<State> = (0..cfg.n_targets)
+        .map(|_| {
+            let range = rng.gen_range(2000.0..8000.0);
+            let bearing = rng.gen_range(-PI..PI);
+            let speed = rng.gen_range(15.0..35.0);
+            let heading = rng.gen_range(-PI..PI);
+            State::new(
+                cfg.radar.pos[0] + range * bearing.cos(),
+                cfg.radar.pos[1] + range * bearing.sin(),
+                speed * heading.cos(),
+                speed * heading.sin(),
+            )
+        })
+        .collect();
+    let trajectories: Vec<Vec<State>> = starts
+        .iter()
+        .map(|x0| simulate_trajectory(*x0, cfg.dt, cfg.steps, cfg.sigma_accel, rng))
+        .collect();
+
+    let clutter_count = (cfg.clutter_rate > 0.0)
+        .then(|| Poisson::new(cfg.clutter_rate).expect("clutter_rate must be finite and > 0"));
+
+    (1..=cfg.steps)
+        .map(|k| {
+            let truth: Vec<State> = trajectories.iter().map(|t| t[k]).collect();
+            let mut meas = Vec::new();
+            for x in &truth {
+                let in_range = cfg.radar.h(x).range <= cfg.r_max;
+                if in_range && rng.gen::<f64>() < cfg.pd {
+                    meas.push(cfg.radar.measure(x, rng));
+                }
+            }
+            let n_clutter = clutter_count.as_ref().map_or(0, |d| d.sample(rng) as usize);
+            for _ in 0..n_clutter {
+                // sqrt gives a uniform density over area.
+                let range = cfg.r_max * rng.gen::<f64>().sqrt();
+                meas.push(RadarMeas {
+                    range,
+                    bearing: rng.gen_range(-PI..PI),
+                });
+            }
+            meas.shuffle(rng);
+            Scan { truth, meas }
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -57,5 +137,43 @@ mod tests {
         let a = simulate_trajectory(x0, 1.0, 20, 2.0, &mut StdRng::seed_from_u64(7));
         let b = simulate_trajectory(x0, 1.0, 20, 2.0, &mut StdRng::seed_from_u64(7));
         assert_eq!(a, b);
+    }
+
+    fn cfg(pd: f64, clutter_rate: f64) -> ScenarioConfig {
+        ScenarioConfig {
+            radar: Radar {
+                pos: nalgebra::Vector2::new(0.0, 0.0),
+                sigma_r: 15.0,
+                sigma_b: 0.003,
+            },
+            dt: 1.0,
+            steps: 400,
+            n_targets: 4,
+            sigma_accel: 1.0,
+            pd,
+            clutter_rate,
+            r_max: 50000.0,
+        }
+    }
+
+    #[test]
+    fn scenario_with_pd_one_and_no_clutter_has_one_measurement_per_target() {
+        let scans = simulate_scenario(&cfg(1.0, 0.0), &mut StdRng::seed_from_u64(5));
+        assert_eq!(scans.len(), 400);
+        assert!(scans
+            .iter()
+            .all(|s| s.truth.len() == 4 && s.meas.len() == 4));
+    }
+
+    #[test]
+    fn detection_and_clutter_rates_match_configuration() {
+        let c = cfg(0.8, 20.0);
+        let scans = simulate_scenario(&c, &mut StdRng::seed_from_u64(6));
+        let mean = scans.iter().map(|s| s.meas.len() as f64).sum::<f64>() / scans.len() as f64;
+        let expected = 0.8 * 4.0 + 20.0;
+        assert!(
+            (mean - expected).abs() < 1.0,
+            "mean measurements {mean} vs expected {expected}"
+        );
     }
 }
