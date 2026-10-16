@@ -4,8 +4,9 @@
 //! the innovation, solve the track-to-measurement assignment optimally with
 //! the Hungarian algorithm, update assigned tracks, and start tentative
 //! tracks from unassigned measurements. Tentative tracks are confirmed on
-//! M hits within N scans and deleted otherwise; confirmed tracks are deleted
-//! after too many consecutive misses.
+//! M hits within N scans and deleted otherwise, or alternatively by a
+//! sequential likelihood-ratio score (see [`ScoreConfig`]); confirmed tracks
+//! are deleted after too many consecutive misses.
 
 use nalgebra::{Matrix4, Vector2};
 
@@ -30,12 +31,32 @@ pub struct Track {
     pub hits: usize,
     /// Consecutive scans without an assigned measurement.
     pub misses: usize,
+    /// Log-likelihood-ratio score (track vs. clutter); only used when
+    /// [`TrackerConfig::score`] is set.
+    pub score: f64,
 }
 
 impl Track {
     pub fn position(&self) -> Vector2<f64> {
         Vector2::new(self.ekf.x[0], self.ekf.x[1])
     }
+}
+
+/// Sequential likelihood-ratio track scoring (Blackman).
+///
+/// Each scan adds `ln(Pd * N(y; 0, S) / (rho * range))` on a hit and
+/// `ln(1 - Pd)` on a miss, where `rho` is the clutter density per square
+/// metre and `rho * range` converts it to density per metre-radian of
+/// range-bearing space. This assumes `pd` and `clutter_density` are known.
+#[derive(Debug, Clone, Copy)]
+pub struct ScoreConfig {
+    pub pd: f64,
+    /// Expected clutter returns per square metre per scan.
+    pub clutter_density: f64,
+    /// Confirm a tentative track when its score reaches this value.
+    pub confirm: f64,
+    /// Delete a tentative track when its score falls below this value.
+    pub delete: f64,
 }
 
 #[derive(Debug, Clone)]
@@ -52,6 +73,9 @@ pub struct TrackerConfig {
     pub confirm_window: usize,
     /// Delete a confirmed track after this many consecutive misses.
     pub max_misses: usize,
+    /// If set, tentative tracks are confirmed and deleted by score instead of
+    /// the M-of-N rule.
+    pub score: Option<ScoreConfig>,
 }
 
 impl Default for TrackerConfig {
@@ -63,6 +87,7 @@ impl Default for TrackerConfig {
             confirm_hits: 3,
             confirm_window: 5,
             max_misses: 5,
+            score: None,
         }
     }
 }
@@ -116,30 +141,50 @@ impl GnnTracker {
 
         let assigned = assignment::solve(&cost);
         let mut meas_used = vec![false; meas.len()];
+        let score_cfg = self.cfg.score;
         for (i, t) in self.tracks.iter_mut().enumerate() {
             t.age += 1;
             match assigned[i] {
                 Some(j) => {
                     let inn = innovations[i][j].expect("assigned pairs are gated in");
+                    if let Some(sc) = score_cfg {
+                        let ln_n = -0.5 * inn.nis()
+                            - std::f64::consts::TAU.ln()
+                            - 0.5 * inn.s.determinant().ln();
+                        let density = sc.clutter_density * meas[j].range.max(1.0);
+                        t.score += sc.pd.min(0.999).ln() + ln_n - density.ln();
+                    }
                     t.ekf.update_with(&inn, radar);
                     t.hits += 1;
                     t.misses = 0;
                     meas_used[j] = true;
                 }
-                None => t.misses += 1,
+                None => {
+                    if let Some(sc) = score_cfg {
+                        t.score += (1.0 - sc.pd.min(0.999)).ln();
+                    }
+                    t.misses += 1;
+                }
             }
         }
 
         // Status changes and deletions.
         let cfg = &self.cfg;
         for t in &mut self.tracks {
-            if t.status == TrackStatus::Tentative && t.hits >= cfg.confirm_hits {
+            let confirmed = match cfg.score {
+                Some(sc) => t.score >= sc.confirm,
+                None => t.hits >= cfg.confirm_hits,
+            };
+            if t.status == TrackStatus::Tentative && confirmed {
                 t.status = TrackStatus::Confirmed;
             }
         }
-        self.tracks.retain(|t| match t.status {
-            TrackStatus::Tentative => t.age < cfg.confirm_window || t.hits >= cfg.confirm_hits,
-            TrackStatus::Confirmed => t.misses <= cfg.max_misses,
+        self.tracks.retain(|t| match (t.status, cfg.score) {
+            (TrackStatus::Tentative, Some(sc)) => t.score >= sc.delete,
+            (TrackStatus::Tentative, None) => {
+                t.age < cfg.confirm_window || t.hits >= cfg.confirm_hits
+            }
+            (TrackStatus::Confirmed, _) => t.misses <= cfg.max_misses,
         });
 
         // New tentative tracks from unused measurements.
@@ -173,6 +218,7 @@ impl GnnTracker {
             age: 1,
             hits: 1,
             misses: 0,
+            score: 0.0,
         }
     }
 
@@ -266,5 +312,47 @@ mod tests {
         ids_at_3.sort_unstable();
         assert_eq!(ids_end.len(), 2);
         assert_eq!(ids_end, ids_at_3, "no ID churn on clean data");
+    }
+
+    fn score_cfg() -> TrackerConfig {
+        TrackerConfig {
+            score: Some(ScoreConfig {
+                pd: 0.9,
+                clutter_density: 1.0e-8,
+                confirm: 12.0,
+                delete: -5.0,
+            }),
+            ..TrackerConfig::default()
+        }
+    }
+
+    #[test]
+    fn score_confirms_a_consistent_target_within_a_few_scans() {
+        let radar = radar();
+        let mut tracker = GnnTracker::new(score_cfg());
+        for k in 0..4 {
+            let truth = State::new(5000.0 + 20.0 * k as f64, 2000.0, 20.0, 0.0);
+            tracker.step(1.0, &[radar.h(&truth)], &radar);
+        }
+        assert_eq!(tracker.confirmed_positions().len(), 1);
+    }
+
+    #[test]
+    fn score_deletes_a_lone_return_after_a_few_misses() {
+        let radar = radar();
+        let mut tracker = GnnTracker::new(score_cfg());
+        tracker.step(
+            1.0,
+            &[RadarMeas {
+                range: 4000.0,
+                bearing: 1.0,
+            }],
+            &radar,
+        );
+        assert_eq!(tracker.tracks.len(), 1);
+        for _ in 0..3 {
+            tracker.step(1.0, &[], &radar);
+        }
+        assert!(tracker.tracks.is_empty());
     }
 }

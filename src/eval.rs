@@ -18,6 +18,10 @@ pub const OSPA_ORDER: f64 = 2.0;
 /// Scans at the start of a run excluded from scoring while tracks form.
 pub const BURN_IN: usize = 10;
 
+/// A confirmed track within this distance (m) of a true target counts as
+/// tracking it; otherwise it is a false track.
+pub const MATCH_RADIUS: f64 = 100.0;
+
 #[derive(Debug, Clone, Copy)]
 pub struct RunStats {
     /// Mean OSPA (m) over scored scans.
@@ -26,6 +30,21 @@ pub struct RunStats {
     pub mean_tracks: f64,
     /// Mean number of true targets per scored scan.
     pub mean_targets: f64,
+    /// Mean confirmed tracks per scan with no true target within
+    /// [`MATCH_RADIUS`].
+    pub mean_false: f64,
+    /// Mean true targets per scan with no confirmed track within
+    /// [`MATCH_RADIUS`].
+    pub mean_missed: f64,
+    /// Mean scans from the start until each true target first has a confirmed
+    /// track within [`MATCH_RADIUS`] (the run length if it never does).
+    pub mean_confirm_delay: f64,
+}
+
+fn count_unmatched(a: &[Vector2<f64>], b: &[Vector2<f64>]) -> usize {
+    a.iter()
+        .filter(|p| b.iter().all(|q| (*p - *q).norm() > MATCH_RADIUS))
+        .count()
 }
 
 /// Run one seeded scenario through the GNN tracker.
@@ -35,8 +54,18 @@ pub fn run_gnn(cfg: &ScenarioConfig, tracker_cfg: &TrackerConfig, seed: u64) -> 
     let mut tracker = GnnTracker::new(tracker_cfg.clone());
 
     let (mut ospa_sum, mut track_sum, mut target_sum, mut n) = (0.0, 0.0, 0.0, 0usize);
+    let (mut false_sum, mut missed_sum) = (0.0, 0.0);
+    let mut first_confirmed: Vec<Option<usize>> = vec![None; cfg.n_targets];
     for (k, scan) in scans.iter().enumerate() {
         tracker.step(cfg.dt, &scan.meas, &cfg.radar);
+        let est = tracker.confirmed_positions();
+        for (i, x) in scan.truth.iter().enumerate() {
+            let pos = Vector2::new(x[0], x[1]);
+            if first_confirmed[i].is_none() && est.iter().any(|e| (e - pos).norm() <= MATCH_RADIUS)
+            {
+                first_confirmed[i] = Some(k + 1);
+            }
+        }
         if k < BURN_IN {
             continue;
         }
@@ -45,17 +74,22 @@ pub fn run_gnn(cfg: &ScenarioConfig, tracker_cfg: &TrackerConfig, seed: u64) -> 
             .iter()
             .map(|x| Vector2::new(x[0], x[1]))
             .collect();
-        let est = tracker.confirmed_positions();
         ospa_sum += ospa(&truth, &est, OSPA_CUTOFF, OSPA_ORDER);
         track_sum += est.len() as f64;
         target_sum += truth.len() as f64;
+        false_sum += count_unmatched(&est, &truth) as f64;
+        missed_sum += count_unmatched(&truth, &est) as f64;
         n += 1;
     }
     let n = n as f64;
+    let delay_sum: usize = first_confirmed.iter().map(|f| f.unwrap_or(cfg.steps)).sum();
     RunStats {
         mean_ospa: ospa_sum / n,
         mean_tracks: track_sum / n,
         mean_targets: target_sum / n,
+        mean_false: false_sum / n,
+        mean_missed: missed_sum / n,
+        mean_confirm_delay: delay_sum as f64 / cfg.n_targets as f64,
     }
 }
 
@@ -67,6 +101,9 @@ pub fn run_gnn_mean(cfg: &ScenarioConfig, tracker_cfg: &TrackerConfig, n_seeds: 
         mean_ospa: runs.iter().map(|r| r.mean_ospa).sum::<f64>() / k,
         mean_tracks: runs.iter().map(|r| r.mean_tracks).sum::<f64>() / k,
         mean_targets: runs.iter().map(|r| r.mean_targets).sum::<f64>() / k,
+        mean_false: runs.iter().map(|r| r.mean_false).sum::<f64>() / k,
+        mean_missed: runs.iter().map(|r| r.mean_missed).sum::<f64>() / k,
+        mean_confirm_delay: runs.iter().map(|r| r.mean_confirm_delay).sum::<f64>() / k,
     }
 }
 

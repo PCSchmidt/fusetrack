@@ -5,6 +5,7 @@
 
 use fusetrack::eval::run_gnn_mean;
 use fusetrack::sim::ScenarioConfig;
+use fusetrack::tracker::ScoreConfig;
 use fusetrack::{Radar, TrackerConfig};
 use nalgebra::Vector2;
 
@@ -46,4 +47,24 @@ fn more_clutter_is_worse() {
     let light = run_gnn_mean(&scenario(0.9, 10.0), &TrackerConfig::default(), 5);
     let heavy = run_gnn_mean(&scenario(0.9, 50.0), &TrackerConfig::default(), 5);
     assert!(heavy.mean_ospa > light.mean_ospa);
+}
+
+#[test]
+fn score_confirmation_survives_heavy_clutter() {
+    // 200 clutter returns per scan over a 15 km disc. The M-of-N baseline
+    // confirms ~8 false tracks here (see README); the score rule should not.
+    let r_max: f64 = 15000.0;
+    let tracker = TrackerConfig {
+        score: Some(ScoreConfig {
+            pd: 0.9,
+            clutter_density: 200.0 / (std::f64::consts::PI * r_max * r_max),
+            confirm: 12.0,
+            delete: -5.0,
+        }),
+        ..TrackerConfig::default()
+    };
+    let s = run_gnn_mean(&scenario(0.9, 200.0), &tracker, 3);
+    println!("{s:?}");
+    assert!(s.mean_false < 0.5, "false tracks {}", s.mean_false);
+    assert!(s.mean_ospa < 30.0, "OSPA {}", s.mean_ospa);
 }

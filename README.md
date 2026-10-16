@@ -19,7 +19,7 @@ Fielded counter-UAS systems fuse noisy, asynchronous reports from radar, EO/IR a
 - **EKF** (`ekf`): constant-velocity model, nonlinear range-bearing update, Joseph-form covariance update, bearing innovation wrapped across the ±π branch cut.
 - **Multi-target scenarios** (`sim`): several targets, detection probability Pd, Poisson clutter uniform over the surveillance disc, shuffled unlabelled measurements.
 - **Assignment** (`assignment`): Hungarian algorithm, checked against brute force on random matrices.
-- **GNN tracker** (`tracker`): chi-square gating, cost = NIS + ln|S|, optimal one-to-one assignment, tentative tracks confirmed on 3 hits in 5 scans, confirmed tracks deleted after 5 consecutive misses.
+- **GNN tracker** (`tracker`): chi-square gating, cost = NIS + ln|S|, optimal one-to-one assignment, tentative tracks confirmed on 3 hits in 5 scans (default) or by a sequential likelihood-ratio score, confirmed tracks deleted after 5 consecutive misses.
 - **IMM** (`imm`): constant-velocity plus coordinated-turn (±ω) models with Markov switching, moment-matched mixing and combination. Derivation in [docs/imm-derivation.md](docs/imm-derivation.md).
 - **Metrics** (`metrics`, `eval`): OSPA (cutoff 200 m, order 2) per scan, averaged over seeded runs.
 
@@ -57,7 +57,37 @@ NEES and NIS near their ideal values mean the filter's reported uncertainty matc
 | 50 | 0.7 | 28.6 m | 5.17 |
 | 200 | 0.7 | 156.0 m | 13.53 |
 
-The tracker is accurate up to about 10 clutter returns per scan and degrades gracefully at 50. At 200 it breaks down: it confirms roughly 13 tracks for 5 targets, so OSPA is dominated by false tracks. The cause is the large gate around a freshly born track (initial velocity σ = 30 m/s), which lets clutter chain into false tentative tracks. Fixing this (velocity-aware initialisation, tighter confirmation logic, probabilistic association) is the point of the next milestones. Reproduce with `cargo run --release --example clutter_sweep` (about 100 s).
+The default tracker is accurate up to about 10 clutter returns per scan and degrades gracefully at 50. At 200 it breaks down: it confirms roughly 13 tracks for 5 targets, so OSPA is dominated by false tracks. The next section diagnoses this and fixes it. Reproduce this table with `cargo run --release --example clutter_sweep` (about 100 s).
+
+### Diagnosing and fixing the clutter breakdown
+
+**Diagnosis.** Counting separately the confirmed tracks with no true target within 100 m ("false") and the targets with no confirmed track within 100 m ("missed") shows the failure is entirely false confirmations: at 200 clutter returns per scan and Pd 0.9 the default rule has 7.99 false tracks per scan and 0.00 missed targets. Every clutter return spawns a tentative track, so about 200 tentative tracks are born each scan, and a few of them chain through further clutter and satisfy "3 hits in 5 scans" by chance. I have not run an ablation that isolates the wide gate around a fresh track (initial velocity σ = 30 m/s) as the specific cause, so that part is a plausible explanation, not a measured one.
+
+**Fixes compared.** A stricter M-of-N rule, and a sequential likelihood-ratio score (Blackman) that adds `ln(Pd · N(y; 0, S) / (ρ · range))` on a hit and `ln(1 − Pd)` on a miss, where ρ is the clutter density per m². Confirm at score ≥ 12 or ≥ 20; delete a tentative track below −5. The score rule assumes Pd and the clutter density are known; here they are set to the simulator's true values. Same scenarios as above, 10 seeds. "Confirm delay" is the mean number of scans until each target first has a confirmed track.
+
+| Clutter / scan | Pd | Confirmation rule | Mean OSPA | False | Missed | Confirm delay |
+| --- | --- | --- | --- | --- | --- | --- |
+| 200 | 0.9 | 3 of 5 (default) | 154.2 m | 7.99 | 0.00 | 3.4 scans |
+| 200 | 0.9 | 4 of 6 | 24.5 m | 0.15 | 0.00 | 4.6 |
+| 200 | 0.9 | 5 of 7 | 15.8 m | 0.01 | 0.00 | 5.7 |
+| 200 | 0.9 | **score ≥ 12** | **15.1 m** | 0.00 | 0.00 | 4.5 |
+| 200 | 0.9 | score ≥ 20 | 14.6 m | 0.00 | 0.00 | 5.9 |
+| 200 | 0.7 | 3 of 5 (default) | 154.8 m | 8.23 | 0.02 | 4.5 |
+| 200 | 0.7 | 4 of 6 | 35.3 m | 0.25 | 0.06 | 7.5 |
+| 200 | 0.7 | 5 of 7 | 27.0 m | 0.01 | 0.18 | 10.1 |
+| 200 | 0.7 | **score ≥ 12** | **18.3 m** | 0.01 | 0.04 | 6.5 |
+| 200 | 0.7 | score ≥ 20 | 19.4 m | 0.00 | 0.06 | 8.4 |
+| 10 | 0.7 | 3 of 5 (default) | 15.4 m | 0.00 | 0.01 | 4.7 |
+| 10 | 0.7 | 5 of 7 | 24.2 m | 0.00 | 0.14 | 9.9 |
+| 10 | 0.7 | **score ≥ 12** | 15.2 m | 0.00 | 0.01 | 4.6 |
+
+What this shows:
+
+- Heavy clutter is a false-confirmation problem, and a confirmation rule fixes it. At 200 returns per scan and Pd 0.9, the score rule cuts mean OSPA from 154 m to 15 m and false tracks from about 8 to 0, at the cost of about one extra scan to confirm.
+- Stricter M-of-N rules also work at Pd 0.9, but the cost shows up at low Pd: 5 of 7 takes about 10 scans to confirm at Pd 0.7 and misses targets, even in light clutter (OSPA 24.2 m vs. 15.4 m at 10 returns per scan).
+- The score rule does not pay that price. It adapts to Pd and clutter density, so it is equal to the default in light clutter and better in heavy clutter, and it beats 5 of 7 on both OSPA and confirmation delay at Pd 0.7.
+
+Caveats: the thresholds (12 and 20) were tried on these same scenarios, so the numbers are tuned, not held out; only two thresholds and one delete level were tried; and the score rule needs Pd and clutter density, which a real system must estimate. Reproduce with `cargo run --release --example clutter_diagnose` (about 5 minutes). The default configuration is unchanged; the score rule is opt-in via `TrackerConfig::score`.
 
 ### IMM vs. constant-velocity EKF on a manoeuvring target
 
@@ -82,6 +112,7 @@ Two readings. First, a CV filter tuned for straight flight (σ_a = 0.5) falls ap
 - One sensor. The multi-target GNN tracker still uses a single constant-velocity model; the IMM is evaluated on one target only.
 - The IMM uses fixed turn rates (±0.10 rad/s). The turn rate is not estimated.
 - Targets are present for the whole scenario (no births or deaths), and clutter is uniform and independent between scans.
+- The score-based confirmation assumes known Pd and clutter density.
 - Hard assignment (GNN) only; a track is initialised from one measurement with isotropic position uncertainty and zero velocity.
 - Simulated data throughout, generated from the same motion model the filter assumes, which is the easy case. No real sensor data.
 - Results are averages over a modest number of seeds, with no confidence intervals yet.
@@ -93,6 +124,7 @@ cargo test
 cargo run --release --example single_target
 cargo run --release --example clutter_sweep
 cargo run --release --example imm_maneuver
+cargo run --release --example clutter_diagnose
 ```
 
 Requires a stable Rust toolchain. CI runs `fmt`, `clippy -D warnings` and the tests.

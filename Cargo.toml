@@ -1,6 +1,6 @@
 [package]
 name = "fusetrack"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 description = "Multi-sensor fusion tracking for counter-UAS: simulator, EKF/IMM, association benchmarks"
 license = "MIT"
@@ -11,3 +11,6 @@ readme = "README.md"
 nalgebra = "0.33"
 rand = "0.8"
 rand_distr = "0.4"
+
+[profile.test]
+opt-level = 3

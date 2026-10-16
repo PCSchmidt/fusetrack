@@ -17,4 +17,4 @@ pub mod tracker;
 pub use ekf::Ekf;
 pub use imm::{Imm, ImmConfig, MotionModel};
 pub use models::{wrap_angle, Radar, RadarMeas, State};
-pub use tracker::{GnnTracker, TrackerConfig};
+pub use tracker::{GnnTracker, ScoreConfig, TrackerConfig};
