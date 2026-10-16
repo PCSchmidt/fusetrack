@@ -7,11 +7,17 @@
 //! M hits within N scans and deleted otherwise, or alternatively by a
 //! sequential likelihood-ratio score (see [`ScoreConfig`]); confirmed tracks
 //! are deleted after too many consecutive misses.
+//!
+//! Each track runs either a single constant-velocity EKF or, if
+//! [`TrackerConfig::imm`] is set, an IMM filter. IMM tracks are gated and
+//! costed with the combined predicted state and covariance, then updated by
+//! the IMM so each model is reweighted by its own likelihood.
 
 use nalgebra::{Matrix4, Vector2};
 
 use crate::assignment::{self, FORBIDDEN};
-use crate::ekf::{Ekf, Innovation};
+use crate::ekf::{Ekf, Innovation, MeasurementModel};
+use crate::imm::{Imm, ImmConfig};
 use crate::models::{Radar, RadarMeas, State};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -20,10 +26,60 @@ pub enum TrackStatus {
     Confirmed,
 }
 
+/// The filter carried by a track.
+#[derive(Debug, Clone)]
+pub enum TrackFilter {
+    /// Single constant-velocity EKF.
+    Single(Ekf),
+    /// Interacting multiple model filter.
+    Multi(Imm),
+}
+
+impl TrackFilter {
+    fn predict(&mut self, dt: f64) {
+        match self {
+            TrackFilter::Single(e) => e.predict(dt),
+            TrackFilter::Multi(i) => i.predict(dt),
+        }
+    }
+
+    /// Linearised measurement model at the (combined) predicted state.
+    fn measurement_model(&self, radar: &Radar) -> Option<MeasurementModel> {
+        match self {
+            TrackFilter::Single(e) => e.measurement_model(radar),
+            TrackFilter::Multi(i) => {
+                let (x, p) = i.estimate();
+                Ekf::new(x, p, 0.0).measurement_model(radar)
+            }
+        }
+    }
+
+    /// `inn` is the gating innovation of the combined prediction; the IMM
+    /// recomputes a per-model innovation internally.
+    fn update(&mut self, inn: &Innovation, z: &RadarMeas, radar: &Radar) {
+        match self {
+            TrackFilter::Single(e) => {
+                e.update_with(inn, radar);
+            }
+            TrackFilter::Multi(i) => {
+                i.update(z, radar);
+            }
+        }
+    }
+
+    /// Current state estimate.
+    pub fn state(&self) -> State {
+        match self {
+            TrackFilter::Single(e) => e.x,
+            TrackFilter::Multi(i) => i.estimate().0,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Track {
     pub id: u64,
-    pub ekf: Ekf,
+    pub filter: TrackFilter,
     pub status: TrackStatus,
     /// Scans since the track was born (including the birth scan).
     pub age: usize,
@@ -38,7 +94,8 @@ pub struct Track {
 
 impl Track {
     pub fn position(&self) -> Vector2<f64> {
-        Vector2::new(self.ekf.x[0], self.ekf.x[1])
+        let x = self.filter.state();
+        Vector2::new(x[0], x[1])
     }
 }
 
@@ -76,6 +133,11 @@ pub struct TrackerConfig {
     /// If set, tentative tracks are confirmed and deleted by score instead of
     /// the M-of-N rule.
     pub score: Option<ScoreConfig>,
+    /// If set, tracks run this IMM instead of a single constant-velocity EKF
+    /// (`sigma_accel` is then ignored). The first model should be constant
+    /// velocity: new tracks start with probability 0.8 on it and the rest
+    /// shared equally across the other models.
+    pub imm: Option<ImmConfig>,
 }
 
 impl Default for TrackerConfig {
@@ -88,6 +150,7 @@ impl Default for TrackerConfig {
             confirm_window: 5,
             max_misses: 5,
             score: None,
+            imm: None,
         }
     }
 }
@@ -111,7 +174,7 @@ impl GnnTracker {
     /// Process one scan of measurements taken `dt` seconds after the last.
     pub fn step(&mut self, dt: f64, meas: &[RadarMeas], radar: &Radar) {
         for t in &mut self.tracks {
-            t.ekf.predict(dt);
+            t.filter.predict(dt);
         }
 
         // Gated cost matrix: NIS + ln|S| (negative log-likelihood up to a
@@ -121,7 +184,7 @@ impl GnnTracker {
         for t in &self.tracks {
             let mut inn_row = Vec::with_capacity(meas.len());
             let mut cost_row = Vec::with_capacity(meas.len());
-            let model = t.ekf.measurement_model(radar);
+            let model = t.filter.measurement_model(radar);
             let ln_det_s = model.map_or(0.0, |m| m.s.determinant().ln());
             for z in meas {
                 match model.map(|m| m.innovation(z)) {
@@ -154,7 +217,7 @@ impl GnnTracker {
                         let density = sc.clutter_density * meas[j].range.max(1.0);
                         t.score += sc.pd.min(0.999).ln() + ln_n - density.ln();
                     }
-                    t.ekf.update_with(&inn, radar);
+                    t.filter.update(&inn, &meas[j], radar);
                     t.hits += 1;
                     t.misses = 0;
                     meas_used[j] = true;
@@ -213,7 +276,20 @@ impl GnnTracker {
         self.next_id += 1;
         Track {
             id,
-            ekf: Ekf::new(x, p, self.cfg.sigma_accel),
+            filter: match &self.cfg.imm {
+                None => TrackFilter::Single(Ekf::new(x, p, self.cfg.sigma_accel)),
+                Some(imm_cfg) => {
+                    let r = imm_cfg.models.len();
+                    let mu0 = if r == 1 {
+                        vec![1.0]
+                    } else {
+                        let mut v = vec![0.2 / (r - 1) as f64; r];
+                        v[0] = 0.8;
+                        v
+                    };
+                    TrackFilter::Multi(Imm::new(imm_cfg.clone(), x, p, mu0))
+                }
+            },
             status: TrackStatus::Tentative,
             age: 1,
             hits: 1,
@@ -354,5 +430,28 @@ mod tests {
             tracker.step(1.0, &[], &radar);
         }
         assert!(tracker.tracks.is_empty());
+    }
+
+    #[test]
+    fn imm_tracks_confirm_and_follow_a_turning_target() {
+        use crate::imm::ImmConfig;
+        let radar = radar();
+        let cfg = TrackerConfig {
+            imm: Some(ImmConfig::cv_ct(0.1, 0.5, 0.5, 0.9)),
+            ..TrackerConfig::default()
+        };
+        let mut tracker = GnnTracker::new(cfg);
+        let mut truth = State::new(5000.0, 2000.0, -25.0, 15.0);
+        for k in 0..40 {
+            // Straight for 15 scans, then a constant turn.
+            let omega = if k < 15 { 0.0 } else { 0.1 };
+            truth = crate::ekf::Ekf::ct_transition(omega, 1.0) * truth;
+            tracker.step(1.0, &[radar.h(&truth)], &radar);
+        }
+        assert_eq!(tracker.confirmed_positions().len(), 1);
+        assert_eq!(tracker.tracks.len(), 1, "no track lost or duplicated");
+        let est = tracker.tracks[0].filter.state();
+        assert!((est[0] - truth[0]).hypot(est[1] - truth[1]) < 30.0);
+        assert!(matches!(tracker.tracks[0].filter, TrackFilter::Multi(_)));
     }
 }

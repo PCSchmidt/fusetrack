@@ -8,7 +8,9 @@ use crate::ekf::Ekf;
 use crate::imm::Imm;
 use crate::metrics::ospa;
 use crate::models::{Radar, RadarMeas, State};
-use crate::sim::{simulate_maneuvering, simulate_scenario, ScenarioConfig};
+use crate::sim::{
+    simulate_maneuvering, simulate_maneuvering_scenario, simulate_scenario, Scan, ScenarioConfig,
+};
 use crate::tracker::{GnnTracker, TrackerConfig};
 
 /// OSPA cutoff (m) and order used for all reported numbers.
@@ -51,6 +53,24 @@ fn count_unmatched(a: &[Vector2<f64>], b: &[Vector2<f64>]) -> usize {
 pub fn run_gnn(cfg: &ScenarioConfig, tracker_cfg: &TrackerConfig, seed: u64) -> RunStats {
     let mut rng = StdRng::seed_from_u64(seed);
     let scans = simulate_scenario(cfg, &mut rng);
+    evaluate(cfg, &scans, tracker_cfg)
+}
+
+/// Like [`run_gnn`], but on targets that turn at `+/-omega` rad/s in random
+/// segments of `segment_len` scans.
+pub fn run_gnn_maneuvering(
+    cfg: &ScenarioConfig,
+    omega: f64,
+    segment_len: usize,
+    tracker_cfg: &TrackerConfig,
+    seed: u64,
+) -> RunStats {
+    let mut rng = StdRng::seed_from_u64(seed);
+    let scans = simulate_maneuvering_scenario(cfg, omega, segment_len, &mut rng);
+    evaluate(cfg, &scans, tracker_cfg)
+}
+
+fn evaluate(cfg: &ScenarioConfig, scans: &[Scan], tracker_cfg: &TrackerConfig) -> RunStats {
     let mut tracker = GnnTracker::new(tracker_cfg.clone());
 
     let (mut ospa_sum, mut track_sum, mut target_sum, mut n) = (0.0, 0.0, 0.0, 0usize);
@@ -93,18 +113,37 @@ pub fn run_gnn(cfg: &ScenarioConfig, tracker_cfg: &TrackerConfig, seed: u64) -> 
     }
 }
 
+fn mean_stats(runs: &[RunStats]) -> RunStats {
+    let k = runs.len() as f64;
+    let avg = |f: fn(&RunStats) -> f64| runs.iter().map(f).sum::<f64>() / k;
+    RunStats {
+        mean_ospa: avg(|r| r.mean_ospa),
+        mean_tracks: avg(|r| r.mean_tracks),
+        mean_targets: avg(|r| r.mean_targets),
+        mean_false: avg(|r| r.mean_false),
+        mean_missed: avg(|r| r.mean_missed),
+        mean_confirm_delay: avg(|r| r.mean_confirm_delay),
+    }
+}
+
 /// Average [`RunStats`] over `n_seeds` seeds starting at 0.
 pub fn run_gnn_mean(cfg: &ScenarioConfig, tracker_cfg: &TrackerConfig, n_seeds: u64) -> RunStats {
     let runs: Vec<RunStats> = (0..n_seeds).map(|s| run_gnn(cfg, tracker_cfg, s)).collect();
-    let k = runs.len() as f64;
-    RunStats {
-        mean_ospa: runs.iter().map(|r| r.mean_ospa).sum::<f64>() / k,
-        mean_tracks: runs.iter().map(|r| r.mean_tracks).sum::<f64>() / k,
-        mean_targets: runs.iter().map(|r| r.mean_targets).sum::<f64>() / k,
-        mean_false: runs.iter().map(|r| r.mean_false).sum::<f64>() / k,
-        mean_missed: runs.iter().map(|r| r.mean_missed).sum::<f64>() / k,
-        mean_confirm_delay: runs.iter().map(|r| r.mean_confirm_delay).sum::<f64>() / k,
-    }
+    mean_stats(&runs)
+}
+
+/// Average [`RunStats`] of [`run_gnn_maneuvering`] over `n_seeds` seeds.
+pub fn run_gnn_maneuvering_mean(
+    cfg: &ScenarioConfig,
+    omega: f64,
+    segment_len: usize,
+    tracker_cfg: &TrackerConfig,
+    n_seeds: u64,
+) -> RunStats {
+    let runs: Vec<RunStats> = (0..n_seeds)
+        .map(|s| run_gnn_maneuvering(cfg, omega, segment_len, tracker_cfg, s))
+        .collect();
+    mean_stats(&runs)
 }
 
 /// A filter that tracks one target from range-bearing radar scans.

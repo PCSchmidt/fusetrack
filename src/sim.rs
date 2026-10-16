@@ -95,11 +95,10 @@ pub struct Scan {
     pub meas: Vec<RadarMeas>,
 }
 
-/// Simulate `steps` scans of `n_targets` targets present throughout.
-///
-/// Targets start 2-8 km from the radar at 15-35 m/s on random headings.
-pub fn simulate_scenario<R: Rng + ?Sized>(cfg: &ScenarioConfig, rng: &mut R) -> Vec<Scan> {
-    let starts: Vec<State> = (0..cfg.n_targets)
+/// Random starting states: 2-8 km from the radar at 15-35 m/s on random
+/// headings.
+fn random_starts<R: Rng + ?Sized>(cfg: &ScenarioConfig, rng: &mut R) -> Vec<State> {
+    (0..cfg.n_targets)
         .map(|_| {
             let range = rng.gen_range(2000.0..8000.0);
             let bearing = rng.gen_range(-PI..PI);
@@ -112,12 +111,16 @@ pub fn simulate_scenario<R: Rng + ?Sized>(cfg: &ScenarioConfig, rng: &mut R) -> 
                 speed * heading.sin(),
             )
         })
-        .collect();
-    let trajectories: Vec<Vec<State>> = starts
-        .iter()
-        .map(|x0| simulate_trajectory(*x0, cfg.dt, cfg.steps, cfg.sigma_accel, rng))
-        .collect();
+        .collect()
+}
 
+/// Turn truth trajectories (index 0 is the start state) into scans with
+/// missed detections and clutter.
+fn scans_from_trajectories<R: Rng + ?Sized>(
+    cfg: &ScenarioConfig,
+    trajectories: &[Vec<State>],
+    rng: &mut R,
+) -> Vec<Scan> {
     let clutter_count = (cfg.clutter_rate > 0.0)
         .then(|| Poisson::new(cfg.clutter_rate).expect("clutter_rate must be finite and > 0"));
 
@@ -144,6 +147,52 @@ pub fn simulate_scenario<R: Rng + ?Sized>(cfg: &ScenarioConfig, rng: &mut R) -> 
             Scan { truth, meas }
         })
         .collect()
+}
+
+/// Simulate `steps` scans of `n_targets` targets present throughout.
+///
+/// Targets start 2-8 km from the radar at 15-35 m/s on random headings and
+/// are driven only by random acceleration noise (no deliberate manoeuvres).
+pub fn simulate_scenario<R: Rng + ?Sized>(cfg: &ScenarioConfig, rng: &mut R) -> Vec<Scan> {
+    let starts = random_starts(cfg, rng);
+    let trajectories: Vec<Vec<State>> = starts
+        .iter()
+        .map(|x0| simulate_trajectory(*x0, cfg.dt, cfg.steps, cfg.sigma_accel, rng))
+        .collect();
+    scans_from_trajectories(cfg, &trajectories, rng)
+}
+
+/// Like [`simulate_scenario`], but each target flies a sequence of segments of
+/// `segment_len` steps, each chosen at random from straight, a turn at
+/// `+omega` or a turn at `-omega` (rad/s).
+pub fn simulate_maneuvering_scenario<R: Rng + ?Sized>(
+    cfg: &ScenarioConfig,
+    omega: f64,
+    segment_len: usize,
+    rng: &mut R,
+) -> Vec<Scan> {
+    let starts = random_starts(cfg, rng);
+    let n_segments = cfg.steps.div_ceil(segment_len);
+    let trajectories: Vec<Vec<State>> = starts
+        .iter()
+        .map(|x0| {
+            let segments: Vec<(f64, usize)> = (0..n_segments)
+                .map(|_| {
+                    let w = match rng.gen_range(0..3) {
+                        0 => 0.0,
+                        1 => omega,
+                        _ => -omega,
+                    };
+                    (w, segment_len)
+                })
+                .collect();
+            let (mut states, _) =
+                simulate_maneuvering(*x0, cfg.dt, &segments, cfg.sigma_accel, rng);
+            states.truncate(cfg.steps + 1);
+            states
+        })
+        .collect();
+    scans_from_trajectories(cfg, &trajectories, rng)
 }
 
 #[cfg(test)]
@@ -221,5 +270,36 @@ mod tests {
         let v = xs[30];
         assert!((v[2].hypot(v[3]) - 40.0).abs() < 1e-6);
         assert!((v[3].atan2(v[2]) - 2.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn maneuvering_scenario_conserves_speed_and_actually_turns() {
+        // Without acceleration noise, constant-turn-rate motion conserves speed
+        // exactly, so every target must stay within its initial 15-35 m/s.
+        let c = ScenarioConfig {
+            sigma_accel: 0.0,
+            steps: 100,
+            ..cfg(1.0, 0.0)
+        };
+        let scans = simulate_maneuvering_scenario(&c, 0.1, 25, &mut StdRng::seed_from_u64(9));
+        assert_eq!(scans.len(), 100);
+        assert!(scans
+            .iter()
+            .all(|s| s.truth.len() == 4 && s.meas.len() == 4));
+        for scan in &scans {
+            for v in &scan.truth {
+                let speed = v[2].hypot(v[3]);
+                assert!(
+                    (15.0 - 1e-6..=35.0 + 1e-6).contains(&speed),
+                    "speed {speed}"
+                );
+            }
+        }
+        // At least one target changes heading over the run.
+        let heading = |s: &Scan, i: usize| s.truth[i][3].atan2(s.truth[i][2]);
+        let turned = (0..4).any(|i| {
+            crate::models::wrap_angle(heading(&scans[99], i) - heading(&scans[0], i)).abs() > 0.1
+        });
+        assert!(turned, "no target turned");
     }
 }

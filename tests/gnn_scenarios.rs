@@ -3,10 +3,10 @@
 //! Bounds sit comfortably above the values reported in the README so that
 //! they catch real regressions without being brittle.
 
-use fusetrack::eval::run_gnn_mean;
+use fusetrack::eval::{run_gnn_maneuvering_mean, run_gnn_mean};
 use fusetrack::sim::ScenarioConfig;
 use fusetrack::tracker::ScoreConfig;
-use fusetrack::{Radar, TrackerConfig};
+use fusetrack::{ImmConfig, Radar, TrackerConfig};
 use nalgebra::Vector2;
 
 fn scenario(pd: f64, clutter_rate: f64) -> ScenarioConfig {
@@ -67,4 +67,27 @@ fn score_confirmation_survives_heavy_clutter() {
     println!("{s:?}");
     assert!(s.mean_false < 0.5, "false tracks {}", s.mean_false);
     assert!(s.mean_ospa < 30.0, "OSPA {}", s.mean_ospa);
+}
+
+#[test]
+fn imm_tracks_beat_cv_tracks_on_manoeuvring_targets_at_the_matched_turn_rate() {
+    let cfg = ScenarioConfig {
+        sigma_accel: 0.5,
+        ..scenario(0.9, 10.0)
+    };
+    let cv = |sigma_accel| TrackerConfig {
+        sigma_accel,
+        ..TrackerConfig::default()
+    };
+    let imm = TrackerConfig {
+        imm: Some(ImmConfig::cv_ct(0.10, 0.5, 0.5, 0.9)),
+        ..TrackerConfig::default()
+    };
+    let cv_low = run_gnn_maneuvering_mean(&cfg, 0.10, 25, &cv(0.5), 10);
+    let cv_high = run_gnn_maneuvering_mean(&cfg, 0.10, 25, &cv(3.0), 10);
+    let imm = run_gnn_maneuvering_mean(&cfg, 0.10, 25, &imm, 10);
+    println!("low {cv_low:?}\nhigh {cv_high:?}\nimm {imm:?}");
+    assert!(imm.mean_ospa < cv_low.mean_ospa);
+    assert!(imm.mean_ospa < cv_high.mean_ospa);
+    assert!(imm.mean_false < 0.1 && imm.mean_missed < 0.1);
 }
