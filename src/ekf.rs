@@ -53,9 +53,42 @@ impl Ekf {
             )
     }
 
+    /// Coordinated-turn transition at a known turn rate `omega` (rad/s,
+    /// positive counter-clockwise). Linear in the state for fixed `omega`;
+    /// reduces to constant velocity as `omega -> 0`.
+    pub fn ct_transition(omega: f64, dt: f64) -> Matrix4<f64> {
+        if omega.abs() < 1e-9 {
+            return Self::transition(dt);
+        }
+        let (s, c) = (omega * dt).sin_cos();
+        Matrix4::new(
+            1.0,
+            0.0,
+            s / omega,
+            -(1.0 - c) / omega, //
+            0.0,
+            1.0,
+            (1.0 - c) / omega,
+            s / omega, //
+            0.0,
+            0.0,
+            c,
+            -s, //
+            0.0,
+            0.0,
+            s,
+            c,
+        )
+    }
+
     pub fn predict(&mut self, dt: f64) {
         let f = Self::transition(dt);
         let q = Self::process_noise(dt, self.sigma_accel);
+        self.predict_with(&f, &q);
+    }
+
+    /// Predict with an explicit transition matrix and process noise.
+    pub fn predict_with(&mut self, f: &Matrix4<f64>, q: &Matrix4<f64>) {
         self.x = f * self.x;
         self.p = f * self.p * f.transpose() + q;
     }
@@ -230,5 +263,18 @@ mod tests {
         z.bearing = wrap_angle(z.bearing + 0.002);
         let nis = ekf.update_radar(&z, &radar()).expect("update applied");
         assert!(nis < 10.0, "branch cut not handled, NIS = {nis}");
+    }
+
+    #[test]
+    fn coordinated_turn_preserves_speed_and_rotates_velocity() {
+        let f = Ekf::ct_transition(0.1, 10.0); // 1 rad turn
+        let x = f * State::new(0.0, 0.0, 30.0, 0.0);
+        assert!((x[2].hypot(x[3]) - 30.0).abs() < 1e-9);
+        assert!((x[2] - 30.0 * 1.0_f64.cos()).abs() < 1e-9);
+        assert!((x[3] - 30.0 * 1.0_f64.sin()).abs() < 1e-9);
+        // Positive omega turns counter-clockwise: positions curve toward +y.
+        assert!(x[1] > 0.0);
+        // Zero turn rate is constant velocity.
+        assert_eq!(Ekf::ct_transition(0.0, 2.0), Ekf::transition(2.0));
     }
 }

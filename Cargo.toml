@@ -1,6 +1,6 @@
 [package]
 name = "fusetrack"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 description = "Multi-sensor fusion tracking for counter-UAS: simulator, EKF/IMM, association benchmarks"
 license = "MIT"

@@ -7,6 +7,7 @@ use rand::seq::SliceRandom;
 use rand::Rng;
 use rand_distr::{Distribution, Normal, Poisson};
 
+use crate::ekf::Ekf;
 use crate::models::{Radar, RadarMeas, State};
 
 /// Advance a state by `dt` with a random acceleration `(ax, ay)` held constant
@@ -37,6 +38,35 @@ pub fn simulate_trajectory<R: Rng + ?Sized>(
         out.push(x);
     }
     out
+}
+
+/// Generate a manoeuvring trajectory made of constant-turn-rate segments.
+///
+/// Each segment is `(omega, steps)`: the target turns at `omega` rad/s for
+/// `steps` steps, with the same random-acceleration noise as
+/// [`simulate_trajectory`]. Returns the states (including `x0`) and, for each
+/// step, the turn rate in force.
+pub fn simulate_maneuvering<R: Rng + ?Sized>(
+    x0: State,
+    dt: f64,
+    segments: &[(f64, usize)],
+    sigma_accel: f64,
+    rng: &mut R,
+) -> (Vec<State>, Vec<f64>) {
+    let noise = Normal::new(0.0, sigma_accel).expect("sigma_accel must be finite and >= 0");
+    let mut states = vec![x0];
+    let mut omegas = Vec::new();
+    let mut x = x0;
+    for &(omega, steps) in segments {
+        let f = Ekf::ct_transition(omega, dt);
+        for _ in 0..steps {
+            let (ax, ay) = (noise.sample(rng), noise.sample(rng));
+            x = f * x + State::new(0.5 * ax * dt * dt, 0.5 * ay * dt * dt, ax * dt, ay * dt);
+            states.push(x);
+            omegas.push(omega);
+        }
+    }
+    (states, omegas)
 }
 
 /// Parameters of a multi-target radar scenario with missed detections and
@@ -175,5 +205,21 @@ mod tests {
             (mean - expected).abs() < 1.0,
             "mean measurements {mean} vs expected {expected}"
         );
+    }
+
+    #[test]
+    fn maneuvering_trajectory_follows_segments() {
+        let x0 = State::new(0.0, 0.0, 40.0, 0.0);
+        let segs = [(0.0, 10), (0.1, 20)];
+        let (xs, om) = simulate_maneuvering(x0, 1.0, &segs, 0.0, &mut StdRng::seed_from_u64(1));
+        assert_eq!(xs.len(), 31);
+        assert_eq!(om.len(), 30);
+        assert!(om[..10].iter().all(|&w| w == 0.0) && om[10..].iter().all(|&w| w == 0.1));
+        // Straight leg: 10 steps at 40 m/s.
+        assert!((xs[10][0] - 400.0).abs() < 1e-9 && xs[10][1].abs() < 1e-9);
+        // Turn conserves speed and heading has rotated by 20 * 0.1 = 2 rad.
+        let v = xs[30];
+        assert!((v[2].hypot(v[3]) - 40.0).abs() < 1e-6);
+        assert!((v[3].atan2(v[2]) - 2.0).abs() < 1e-6);
     }
 }

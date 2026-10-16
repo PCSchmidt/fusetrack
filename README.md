@@ -4,7 +4,7 @@
 
 Multi-sensor fusion tracking for counter-UAS, in Rust: a scenario simulator, filters, and (planned) a head-to-head benchmark of classical vs. learned data association.
 
-**Status: v0.2, in progress.** A multi-target GNN tracker with gating, track management and OSPA scoring runs on simulated radar data with missed detections and clutter. IMM, JPDA, additional sensors and the learned-association comparison are not built yet; see the [roadmap](docs/roadmap.md).
+**Status: v0.3, in progress.** A multi-target GNN tracker (gating, track management, OSPA scoring) runs on simulated radar data with missed detections and clutter, and a single-target IMM filter tracks manoeuvring targets. The IMM is not yet integrated into the multi-target tracker. JPDA, additional sensors and the learned-association comparison are not built yet; see the [roadmap](docs/roadmap.md).
 
 Part of [physical-ai-portfolio](https://github.com/PCSchmidt/physical-ai-portfolio).
 
@@ -20,6 +20,7 @@ Fielded counter-UAS systems fuse noisy, asynchronous reports from radar, EO/IR a
 - **Multi-target scenarios** (`sim`): several targets, detection probability Pd, Poisson clutter uniform over the surveillance disc, shuffled unlabelled measurements.
 - **Assignment** (`assignment`): Hungarian algorithm, checked against brute force on random matrices.
 - **GNN tracker** (`tracker`): chi-square gating, cost = NIS + ln|S|, optimal one-to-one assignment, tentative tracks confirmed on 3 hits in 5 scans, confirmed tracks deleted after 5 consecutive misses.
+- **IMM** (`imm`): constant-velocity plus coordinated-turn (±ω) models with Markov switching, moment-matched mixing and combination. Derivation in [docs/imm-derivation.md](docs/imm-derivation.md).
 - **Metrics** (`metrics`, `eval`): OSPA (cutoff 200 m, order 2) per scan, averaged over seeded runs.
 
 ## Results
@@ -58,9 +59,28 @@ NEES and NIS near their ideal values mean the filter's reported uncertainty matc
 
 The tracker is accurate up to about 10 clutter returns per scan and degrades gracefully at 50. At 200 it breaks down: it confirms roughly 13 tracks for 5 targets, so OSPA is dominated by false tracks. The cause is the large gate around a freshly born track (initial velocity σ = 30 m/s), which lets clutter chain into false tentative tracks. Fixing this (velocity-aware initialisation, tighter confirmation logic, probabilistic association) is the point of the next milestones. Reproduce with `cargo run --release --example clutter_sweep` (about 100 s).
 
+### IMM vs. constant-velocity EKF on a manoeuvring target
+
+One radar (σ_range = 15 m, σ_bearing = 0.003 rad), one target at 40 m/s: 40 scans straight, 40 turning at +ω, 40 straight, 40 turning at −ω. Truth acceleration noise σ = 0.5 m/s². 200 seeds. The IMM runs constant velocity and coordinated turns at ±0.10 rad/s (σ = 0.5, stay probability 0.9). Position RMSE in metres; lower is better.
+
+| True ω (rad/s) | Filter | Overall | Straight | Turning |
+| --- | --- | --- | --- | --- |
+| 0.10 (matched) | CV EKF, σ_a = 0.5 | 64.0 | 29.7 | 84.4 |
+| 0.10 | CV EKF, σ_a = 3.0 | 17.0 | 13.5 | 19.6 |
+| 0.10 | **IMM** | **12.6** | 12.4 | 12.8 |
+| 0.06 (mismatched) | CV EKF, σ_a = 0.5 | 34.3 | 16.5 | 44.9 |
+| 0.06 | CV EKF, σ_a = 3.0 | 13.2 | 12.6 | 13.8 |
+| 0.06 | **IMM** | **11.9** | 11.7 | 12.1 |
+| 0.14 (mismatched) | CV EKF, σ_a = 0.5 | 85.3 | 38.9 | 112.6 |
+| 0.14 | CV EKF, σ_a = 3.0 | 20.3 | 14.0 | 24.7 |
+| 0.14 | **IMM** | **19.8** | 13.1 | 24.5 |
+
+Two readings. First, a CV filter tuned for straight flight (σ_a = 0.5) falls apart in turns, with 4-5x the error of the IMM. Second, the fair baseline is a CV filter with inflated process noise (σ_a = 3.0), which tracks turns acceptably at the cost of noisier straight legs. Against that baseline the IMM gains 26% at the matched turn rate, 10% at ω = 0.06, and only 2% at ω = 0.14, where the fixed ±0.10 rad/s turn models are too far from the truth to help. The gain depends on the turn models being roughly right. Reproduce with `cargo run --release --example imm_maneuver`.
+
 ## Limitations
 
-- One sensor and one constant-velocity motion model. Manoeuvre mismatch is not yet tested.
+- One sensor. The multi-target GNN tracker still uses a single constant-velocity model; the IMM is evaluated on one target only.
+- The IMM uses fixed turn rates (±0.10 rad/s). The turn rate is not estimated.
 - Targets are present for the whole scenario (no births or deaths), and clutter is uniform and independent between scans.
 - Hard assignment (GNN) only; a track is initialised from one measurement with isotropic position uncertainty and zero velocity.
 - Simulated data throughout, generated from the same motion model the filter assumes, which is the easy case. No real sensor data.
@@ -72,13 +92,14 @@ The tracker is accurate up to about 10 clutter returns per scan and degrades gra
 cargo test
 cargo run --release --example single_target
 cargo run --release --example clutter_sweep
+cargo run --release --example imm_maneuver
 ```
 
 Requires a stable Rust toolchain. CI runs `fmt`, `clippy -D warnings` and the tests.
 
 ## Planned
 
-IMM for manoeuvring targets, JPDA association, ID-switch and fragmentation metrics, EO bearing-only and RF sensors, OSPA/GOSPA evaluation, out-of-sequence measurement handling, a learned association model benchmarked against classical baselines, and Cursor-on-Target output.
+IMM inside the multi-target tracker, JPDA association, ID-switch and fragmentation metrics, EO bearing-only and RF sensors, OSPA/GOSPA evaluation, out-of-sequence measurement handling, a learned association model benchmarked against classical baselines, and Cursor-on-Target output.
 
 ## Scope
 
