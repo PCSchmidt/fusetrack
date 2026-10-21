@@ -195,6 +195,61 @@ pub fn simulate_maneuvering_scenario<R: Rng + ?Sized>(
     scans_from_trajectories(cfg, &trajectories, rng)
 }
 
+/// Two targets on straight-ish paths that cross at 90 degrees with a controlled closest approach.
+///
+/// Both fly at `speed` m/s and meet near the middle of the run, 5 km from the radar along +x. Target B's path
+/// is shifted by `miss_distance` metres so that the smallest separation between the two (before acceleration
+/// noise) is exactly `miss_distance`. `cfg.n_targets` is ignored (there are two).
+pub fn simulate_crossing<R: Rng + ?Sized>(
+    cfg: &ScenarioConfig,
+    miss_distance: f64,
+    speed: f64,
+    rng: &mut R,
+) -> Vec<Scan> {
+    let t_cross = cfg.steps as f64 * cfg.dt / 2.0;
+    let crossing = cfg.radar.pos + nalgebra::Vector2::new(5000.0, 0.0);
+    let (s, c) = (PI / 4.0).sin_cos();
+    let va = nalgebra::Vector2::new(speed * c, speed * s);
+    let vb = nalgebra::Vector2::new(speed * c, -speed * s);
+    // relative velocity is (0, -2 speed sin 45); shifting B by (d, 0) gives closest approach d
+    let delta = nalgebra::Vector2::new(miss_distance, 0.0);
+    let a0 = crossing - va * t_cross;
+    let b0 = crossing + delta - vb * t_cross;
+    let starts = [
+        State::new(a0[0], a0[1], va[0], va[1]),
+        State::new(b0[0], b0[1], vb[0], vb[1]),
+    ];
+    let trajectories: Vec<Vec<State>> = starts
+        .iter()
+        .map(|x0| simulate_trajectory(*x0, cfg.dt, cfg.steps, cfg.sigma_accel, rng))
+        .collect();
+    scans_from_trajectories(cfg, &trajectories, rng)
+}
+
+/// Two targets flying side by side: same velocity, `separation` metres apart across the line of sight.
+///
+/// They start 6 km from the radar on the +x axis, offset by +/- `separation / 2` in y, and fly toward the
+/// radar at `speed` m/s. Cross-range resolution at that range is about `range * sigma_b`, so separations near
+/// that are the hard case for association. `cfg.n_targets` is ignored (there are two).
+pub fn simulate_parallel<R: Rng + ?Sized>(
+    cfg: &ScenarioConfig,
+    separation: f64,
+    speed: f64,
+    rng: &mut R,
+) -> Vec<Scan> {
+    let x0 = cfg.radar.pos[0] + 6000.0;
+    let y0 = cfg.radar.pos[1];
+    let starts = [
+        State::new(x0, y0 - separation / 2.0, -speed, 0.0),
+        State::new(x0, y0 + separation / 2.0, -speed, 0.0),
+    ];
+    let trajectories: Vec<Vec<State>> = starts
+        .iter()
+        .map(|x| simulate_trajectory(*x, cfg.dt, cfg.steps, cfg.sigma_accel, rng))
+        .collect();
+    scans_from_trajectories(cfg, &trajectories, rng)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,0 +1,59 @@
+    Finished `release` profile [optimized] target(s) in 0.04s
+     Running `target\release\examples\jpda_formation.exe`
+Two targets side by side at 25 m/s, Pd 0.9, 40 seeds, 100 scans
+
+clutter 0 returns/scan
+  separation 30 m
+    GNN          OSPA   12.4 m  GOSPA   17.5 m  ID switches  1.23  frag  0.10  tracks  2.00  false  0.00  missed  0.00
+    JPDA         OSPA   13.1 m  GOSPA   18.5 m  ID switches  2.67  frag  0.10  tracks  2.00  false  0.00  missed  0.00
+    JPDA+merge   OSPA   22.9 m  GOSPA   27.7 m  ID switches  1.30  frag  2.90  tracks  1.92  false  0.00  missed  0.00
+  separation 60 m
+    GNN          OSPA   12.3 m  GOSPA   17.4 m  ID switches  0.55  frag  0.03  tracks  2.00  false  0.00  missed  0.00
+    JPDA         OSPA   12.6 m  GOSPA   17.8 m  ID switches  1.93  frag  0.00  tracks  2.00  false  0.00  missed  0.00
+    JPDA+merge   OSPA   18.2 m  GOSPA   23.1 m  ID switches  1.48  frag  1.73  tracks  1.96  false  0.00  missed  0.00
+  separation 120 m
+    GNN          OSPA   12.3 m  GOSPA   17.4 m  ID switches  0.28  frag  0.03  tracks  2.00  false  0.00  missed  0.00
+    JPDA         OSPA   12.7 m  GOSPA   17.8 m  ID switches  0.45  frag  0.03  tracks  2.00  false  0.00  missed  0.00
+    JPDA+merge   OSPA   13.4 m  GOSPA   18.5 m  ID switches  0.42  frag  0.20  tracks  1.99  false  0.00  missed  0.00
+  separation 240 m
+    GNN          OSPA   12.2 m  GOSPA   17.3 m  ID switches  0.05  frag  0.00  tracks  2.00  false  0.00  missed  0.00
+    JPDA         OSPA   12.4 m  GOSPA   17.4 m  ID switches  0.23  frag  0.00  tracks  2.00  false  0.00  missed  0.00
+    JPDA+merge   OSPA   12.7 m  GOSPA   17.8 m  ID switches  0.15  frag  0.12  tracks  2.00  false  0.00  missed  0.00
+
+clutter 20 returns/scan
+  separation 30 m
+    GNN          OSPA   12.3 m  GOSPA   17.3 m  ID switches  1.38  frag  0.00  tracks  2.00  false  0.00  missed  0.00
+    JPDA         OSPA   14.8 m  GOSPA   20.5 m  ID switches  2.75  frag  0.00  tracks  2.02  false  0.01  missed  0.00
+    JPDA+merge   OSPA   24.0 m  GOSPA   29.1 m  ID switches  1.65  frag  3.30  tracks  1.94  false  0.01  missed  0.00
+  separation 60 m
+    GNN          OSPA   12.2 m  GOSPA   17.3 m  ID switches  0.45  frag  0.00  tracks  2.00  false  0.00  missed  0.00
+    JPDA         OSPA   14.0 m  GOSPA   19.5 m  ID switches  2.00  frag  0.00  tracks  2.02  false  0.01  missed  0.00
+    JPDA+merge   OSPA   18.6 m  GOSPA   23.7 m  ID switches  1.70  frag  1.82  tracks  1.97  false  0.01  missed  0.00
+  separation 120 m
+    GNN          OSPA   12.2 m  GOSPA   17.2 m  ID switches  0.30  frag  0.00  tracks  2.00  false  0.00  missed  0.00
+    JPDA         OSPA   13.8 m  GOSPA   19.2 m  ID switches  0.23  frag  0.00  tracks  2.02  false  0.01  missed  0.00
+    JPDA+merge   OSPA   14.7 m  GOSPA   19.9 m  ID switches  0.10  frag  0.10  tracks  2.00  false  0.01  missed  0.00
+  separation 240 m
+    GNN          OSPA   12.2 m  GOSPA   17.2 m  ID switches  0.33  frag  0.00  tracks  2.00  false  0.00  missed  0.00
+    JPDA         OSPA   14.0 m  GOSPA   19.4 m  ID switches  0.28  frag  0.00  tracks  2.02  false  0.01  missed  0.00
+    JPDA+merge   OSPA   13.8 m  GOSPA   19.0 m  ID switches  0.15  frag  0.12  tracks  2.01  false  0.01  missed  0.00
+
+clutter 100 returns/scan
+  separation 30 m
+    GNN          OSPA   12.3 m  GOSPA   17.3 m  ID switches  1.15  frag  0.17  tracks  2.00  false  0.00  missed  0.00
+    JPDA         OSPA   25.4 m  GOSPA   33.5 m  ID switches  2.77  frag  0.12  tracks  2.13  false  0.09  missed  0.00
+    JPDA+merge   OSPA   32.9 m  GOSPA   39.8 m  ID switches  2.15  frag  3.35  tracks  1.99  false  0.06  missed  0.00
+  separation 60 m
+    GNN          OSPA   12.4 m  GOSPA   17.5 m  ID switches  0.72  frag  0.05  tracks  2.00  false  0.00  missed  0.00
+    JPDA         OSPA   26.1 m  GOSPA   34.3 m  ID switches  2.33  frag  0.03  tracks  2.14  false  0.11  missed  0.00
+    JPDA+merge   OSPA   27.7 m  GOSPA   34.8 m  ID switches  1.38  frag  1.50  tracks  2.06  false  0.08  missed  0.00
+  separation 120 m
+    GNN          OSPA   12.6 m  GOSPA   17.7 m  ID switches  0.17  frag  0.00  tracks  2.00  false  0.00  missed  0.00
+    JPDA         OSPA   26.7 m  GOSPA   34.8 m  ID switches  0.17  frag  0.00  tracks  2.14  false  0.12  missed  0.00
+    JPDA+merge   OSPA   25.1 m  GOSPA   32.6 m  ID switches  0.25  frag  0.25  tracks  2.10  false  0.10  missed  0.00
+  separation 240 m
+    GNN          OSPA   12.5 m  GOSPA   17.5 m  ID switches  0.23  frag  0.00  tracks  2.00  false  0.00  missed  0.00
+    JPDA         OSPA   25.7 m  GOSPA   33.7 m  ID switches  0.20  frag  0.00  tracks  2.14  false  0.11  missed  0.00
+    JPDA+merge   OSPA   23.1 m  GOSPA   30.3 m  ID switches  0.20  frag  0.12  tracks  2.09  false  0.09  missed  0.00
+
+FINISHED

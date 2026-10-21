@@ -1,0 +1,73 @@
+    Finished `release` profile [optimized] target(s) in 0.04s
+     Running `target\release\examples\jpda_vs_gnn.exe`
+Two targets crossing at 90 degrees, 25 m/s, Pd 0.9, 40 seeds, 100 scans
+
+clutter 0 returns/scan
+  closest approach 25 m
+    GNN   OSPA   12.8 m  GOSPA   18.0 m  ID switches  0.05  fragmentations  0.00  tracks  2.00  false  0.00  missed  0.00  inexact scans   0.0
+    JPDA  OSPA   12.7 m  GOSPA   18.0 m  ID switches  0.07  fragmentations  0.00  tracks  2.00  false  0.00  missed  0.00  inexact scans   0.0
+  closest approach 50 m
+    GNN   OSPA   12.8 m  GOSPA   18.1 m  ID switches  0.35  fragmentations  0.00  tracks  2.00  false  0.00  missed  0.00  inexact scans   0.0
+    JPDA  OSPA   12.7 m  GOSPA   18.0 m  ID switches  0.17  fragmentations  0.00  tracks  2.00  false  0.00  missed  0.00  inexact scans   0.0
+  closest approach 100 m
+    GNN   OSPA   12.8 m  GOSPA   18.1 m  ID switches  0.15  fragmentations  0.00  tracks  2.00  false  0.00  missed  0.00  inexact scans   0.0
+    JPDA  OSPA   12.7 m  GOSPA   18.0 m  ID switches  0.17  fragmentations  0.00  tracks  2.00  false  0.00  missed  0.00  inexact scans   0.0
+  closest approach 200 m
+    GNN   OSPA   12.8 m  GOSPA   18.1 m  ID switches  0.05  fragmentations  0.00  tracks  2.00  false  0.00  missed  0.00  inexact scans   0.0
+    JPDA  OSPA   13.0 m  GOSPA   18.3 m  ID switches  0.17  fragmentations  0.03  tracks  2.00  false  0.00  missed  0.00  inexact scans   0.0
+  closest approach 500 m
+    GNN   OSPA   13.0 m  GOSPA   18.3 m  ID switches  0.05  fragmentations  0.00  tracks  2.00  false  0.00  missed  0.00  inexact scans   0.0
+    JPDA  OSPA   12.9 m  GOSPA   18.3 m  ID switches  0.07  fragmentations  0.00  tracks  2.00  false  0.00  missed  0.00  inexact scans   0.0
+
+clutter 20 returns/scan
+  closest approach 25 m
+    GNN   OSPA   12.6 m  GOSPA   17.8 m  ID switches  0.23  fragmentations  0.00  tracks  2.00  false  0.00  missed  0.00  inexact scans   0.0
+    JPDA  OSPA   13.6 m  GOSPA   19.1 m  ID switches  0.15  fragmentations  0.00  tracks  2.01  false  0.01  missed  0.00  inexact scans   0.0
+  closest approach 50 m
+    GNN   OSPA   12.6 m  GOSPA   17.8 m  ID switches  0.03  fragmentations  0.00  tracks  2.00  false  0.00  missed  0.00  inexact scans   0.0
+    JPDA  OSPA   13.8 m  GOSPA   19.3 m  ID switches  0.05  fragmentations  0.00  tracks  2.01  false  0.01  missed  0.00  inexact scans   0.0
+  closest approach 100 m
+    GNN   OSPA   12.6 m  GOSPA   17.8 m  ID switches  0.23  fragmentations  0.00  tracks  2.00  false  0.00  missed  0.00  inexact scans   0.0
+    JPDA  OSPA   14.2 m  GOSPA   19.7 m  ID switches  0.25  fragmentations  0.00  tracks  2.02  false  0.01  missed  0.00  inexact scans   0.0
+  closest approach 200 m
+    GNN   OSPA   12.7 m  GOSPA   17.9 m  ID switches  0.12  fragmentations  0.00  tracks  2.00  false  0.00  missed  0.00  inexact scans   0.0
+    JPDA  OSPA   14.4 m  GOSPA   19.9 m  ID switches  0.20  fragmentations  0.03  tracks  2.01  false  0.01  missed  0.00  inexact scans   0.0
+  closest approach 500 m
+    GNN   OSPA   12.8 m  GOSPA   18.1 m  ID switches  0.03  fragmentations  0.00  tracks  2.00  false  0.00  missed  0.00  inexact scans   0.0
+    JPDA  OSPA   14.7 m  GOSPA   20.4 m  ID switches  0.05  fragmentations  0.00  tracks  2.02  false  0.01  missed  0.00  inexact scans   0.0
+
+clutter 100 returns/scan
+  closest approach 25 m
+    GNN   OSPA   12.6 m  GOSPA   17.8 m  ID switches  0.23  fragmentations  0.00  tracks  2.00  false  0.00  missed  0.00  inexact scans   0.0
+    JPDA  OSPA   23.4 m  GOSPA   31.0 m  ID switches  0.20  fragmentations  0.00  tracks  2.11  false  0.09  missed  0.00  inexact scans   0.0
+  closest approach 50 m
+    GNN   OSPA   12.8 m  GOSPA   18.1 m  ID switches  0.15  fragmentations  0.00  tracks  2.00  false  0.00  missed  0.00  inexact scans   0.0
+    JPDA  OSPA   23.1 m  GOSPA   30.5 m  ID switches  0.20  fragmentations  0.00  tracks  2.10  false  0.09  missed  0.00  inexact scans   0.0
+  closest approach 100 m
+    GNN   OSPA   12.5 m  GOSPA   17.7 m  ID switches  0.20  fragmentations  0.00  tracks  2.00  false  0.00  missed  0.00  inexact scans   0.0
+    JPDA  OSPA   26.7 m  GOSPA   34.9 m  ID switches  0.20  fragmentations  0.00  tracks  2.14  false  0.12  missed  0.00  inexact scans   0.0
+  closest approach 200 m
+    GNN   OSPA   12.6 m  GOSPA   17.8 m  ID switches  0.05  fragmentations  0.00  tracks  2.00  false  0.00  missed  0.00  inexact scans   0.0
+    JPDA  OSPA   24.6 m  GOSPA   32.3 m  ID switches  0.20  fragmentations  0.03  tracks  2.12  false  0.10  missed  0.00  inexact scans   0.0
+  closest approach 500 m
+    GNN   OSPA   12.7 m  GOSPA   18.0 m  ID switches  0.00  fragmentations  0.00  tracks  2.00  false  0.00  missed  0.00  inexact scans   0.0
+    JPDA  OSPA   25.0 m  GOSPA   33.0 m  ID switches  0.15  fragmentations  0.00  tracks  2.12  false  0.11  missed  0.00  inexact scans   0.0
+
+clutter 300 returns/scan
+  closest approach 25 m
+    GNN   OSPA   14.8 m  GOSPA   20.5 m  ID switches  0.13  fragmentations  0.00  tracks  2.02  false  0.01  missed  0.00  inexact scans   0.0
+    JPDA  OSPA   30.7 m  GOSPA   39.9 m  ID switches  0.00  fragmentations  0.00  tracks  2.18  false  0.15  missed  0.00  inexact scans   0.0
+  closest approach 50 m
+    GNN   OSPA   14.8 m  GOSPA   20.6 m  ID switches  0.40  fragmentations  0.00  tracks  2.02  false  0.01  missed  0.00  inexact scans   0.0
+    JPDA  OSPA   36.5 m  GOSPA   47.6 m  ID switches  0.40  fragmentations  0.00  tracks  2.25  false  0.23  missed  0.00  inexact scans   0.1
+  closest approach 100 m
+    GNN   OSPA   14.9 m  GOSPA   20.7 m  ID switches  0.40  fragmentations  0.00  tracks  2.02  false  0.01  missed  0.00  inexact scans   0.0
+    JPDA  OSPA   34.1 m  GOSPA   44.2 m  ID switches  0.00  fragmentations  0.00  tracks  2.21  false  0.20  missed  0.00  inexact scans   0.1
+  closest approach 200 m
+    GNN   OSPA   14.8 m  GOSPA   20.6 m  ID switches  0.13  fragmentations  0.00  tracks  2.02  false  0.01  missed  0.00  inexact scans   0.0
+    JPDA  OSPA   28.7 m  GOSPA   37.6 m  ID switches  0.00  fragmentations  0.00  tracks  2.16  false  0.15  missed  0.00  inexact scans   0.1
+  closest approach 500 m
+    GNN   OSPA   15.0 m  GOSPA   20.8 m  ID switches  0.40  fragmentations  0.00  tracks  2.02  false  0.01  missed  0.00  inexact scans   0.0
+    JPDA  OSPA   33.2 m  GOSPA   43.2 m  ID switches  0.00  fragmentations  0.00  tracks  2.21  false  0.19  missed  0.00  inexact scans   0.1
+
+FINISHED

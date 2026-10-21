@@ -4,9 +4,10 @@ use nalgebra::{Matrix4, Vector2, Vector4};
 use rand::{rngs::StdRng, SeedableRng};
 use rand_distr::{Distribution, Normal};
 
+use crate::assignment::{self, FORBIDDEN};
 use crate::ekf::Ekf;
 use crate::imm::Imm;
-use crate::metrics::ospa;
+use crate::metrics::{gospa, ospa};
 use crate::models::{Radar, RadarMeas, State};
 use crate::sim::{
     simulate_maneuvering, simulate_maneuvering_scenario, simulate_scenario, Scan, ScenarioConfig,
@@ -249,5 +250,181 @@ where
         rmse_all: rmse(all),
         rmse_straight: rmse(straight),
         rmse_turn: rmse(turn),
+    }
+}
+
+/// Track-quality metrics for one run, including identity errors that OSPA does not see.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct QualityStats {
+    pub mean_ospa: f64,
+    pub mean_gospa: f64,
+    /// Times a true target's matched track changed from one track to another (counted against the last
+    /// track it was matched to, so a swap after a gap counts).
+    pub id_switches: f64,
+    /// Times a target that had been matched, then lost, was matched again.
+    pub fragmentations: f64,
+    pub mean_false: f64,
+    pub mean_missed: f64,
+    pub mean_tracks: f64,
+    /// Scans per run on which JPDA fell back to independent PDA because a cluster was too large (0 for GNN).
+    pub inexact_scans: f64,
+}
+
+/// Score a tracker on given scans: OSPA and GOSPA over the scored scans (after [`BURN_IN`]), plus identity
+/// metrics over the whole run. A target is matched to a confirmed track by optimal one-to-one assignment
+/// within [`MATCH_RADIUS`].
+pub fn evaluate_quality(
+    cfg: &ScenarioConfig,
+    scans: &[Scan],
+    tracker_cfg: &TrackerConfig,
+) -> QualityStats {
+    let mut tracker = GnnTracker::new(tracker_cfg.clone());
+    let n_truth = scans.first().map_or(0, |s| s.truth.len());
+    let mut last_id: Vec<Option<u64>> = vec![None; n_truth];
+    let mut was_matched = vec![false; n_truth];
+    let mut ever_matched = vec![false; n_truth];
+    let (mut switches, mut frags) = (0usize, 0usize);
+    let (mut ospa_sum, mut gospa_sum, mut false_sum, mut missed_sum, mut track_sum, mut n) =
+        (0.0, 0.0, 0.0, 0.0, 0.0, 0usize);
+
+    for (k, scan) in scans.iter().enumerate() {
+        tracker.step(cfg.dt, &scan.meas, &cfg.radar);
+        let confirmed: Vec<(u64, Vector2<f64>)> = tracker
+            .tracks
+            .iter()
+            .filter(|t| t.status == crate::tracker::TrackStatus::Confirmed)
+            .map(|t| (t.id, t.position()))
+            .collect();
+        let truth: Vec<Vector2<f64>> = scan
+            .truth
+            .iter()
+            .map(|x| Vector2::new(x[0], x[1]))
+            .collect();
+        let cost: Vec<Vec<f64>> = truth
+            .iter()
+            .map(|p| {
+                confirmed
+                    .iter()
+                    .map(|(_, q)| {
+                        let d = (p - q).norm();
+                        if d <= MATCH_RADIUS {
+                            d
+                        } else {
+                            FORBIDDEN
+                        }
+                    })
+                    .collect()
+            })
+            .collect();
+        let matched = assignment::solve(&cost);
+        for (i, m) in matched.iter().enumerate() {
+            match m {
+                Some(j) => {
+                    let id = confirmed[*j].0;
+                    if let Some(prev) = last_id[i] {
+                        if prev != id {
+                            switches += 1;
+                        }
+                    }
+                    if !was_matched[i] && ever_matched[i] {
+                        frags += 1;
+                    }
+                    last_id[i] = Some(id);
+                    was_matched[i] = true;
+                    ever_matched[i] = true;
+                }
+                None => was_matched[i] = false,
+            }
+        }
+        if k < BURN_IN {
+            continue;
+        }
+        let est: Vec<Vector2<f64>> = confirmed.iter().map(|(_, p)| *p).collect();
+        ospa_sum += ospa(&truth, &est, OSPA_CUTOFF, OSPA_ORDER);
+        gospa_sum += gospa(&truth, &est, OSPA_CUTOFF, OSPA_ORDER);
+        track_sum += est.len() as f64;
+        false_sum += count_unmatched(&est, &truth) as f64;
+        missed_sum += count_unmatched(&truth, &est) as f64;
+        n += 1;
+    }
+    let n = n.max(1) as f64;
+    QualityStats {
+        mean_ospa: ospa_sum / n,
+        mean_gospa: gospa_sum / n,
+        id_switches: switches as f64,
+        fragmentations: frags as f64,
+        mean_false: false_sum / n,
+        mean_missed: missed_sum / n,
+        mean_tracks: track_sum / n,
+        inexact_scans: tracker.jpda_inexact_scans as f64,
+    }
+}
+
+/// One seeded run of two targets crossing with closest approach `miss_distance`.
+pub fn run_crossing(
+    cfg: &ScenarioConfig,
+    miss_distance: f64,
+    speed: f64,
+    tracker_cfg: &TrackerConfig,
+    seed: u64,
+) -> QualityStats {
+    let mut rng = StdRng::seed_from_u64(seed);
+    let scans = crate::sim::simulate_crossing(cfg, miss_distance, speed, &mut rng);
+    evaluate_quality(cfg, &scans, tracker_cfg)
+}
+
+/// Average [`QualityStats`] over `n_seeds` seeds starting at 0.
+pub fn run_crossing_mean(
+    cfg: &ScenarioConfig,
+    miss_distance: f64,
+    speed: f64,
+    tracker_cfg: &TrackerConfig,
+    n_seeds: u64,
+) -> QualityStats {
+    let runs: Vec<QualityStats> = (0..n_seeds)
+        .map(|s| run_crossing(cfg, miss_distance, speed, tracker_cfg, s))
+        .collect();
+    let k = runs.len() as f64;
+    let avg = |f: fn(&QualityStats) -> f64| runs.iter().map(f).sum::<f64>() / k;
+    QualityStats {
+        mean_ospa: avg(|r| r.mean_ospa),
+        mean_gospa: avg(|r| r.mean_gospa),
+        id_switches: avg(|r| r.id_switches),
+        fragmentations: avg(|r| r.fragmentations),
+        mean_false: avg(|r| r.mean_false),
+        mean_missed: avg(|r| r.mean_missed),
+        mean_tracks: avg(|r| r.mean_tracks),
+        inexact_scans: avg(|r| r.inexact_scans),
+    }
+}
+
+/// Average [`QualityStats`] over `n_seeds` seeds starting at 0 for scans produced by `scans_for`.
+pub fn run_quality_mean<F>(
+    cfg: &ScenarioConfig,
+    tracker_cfg: &TrackerConfig,
+    n_seeds: u64,
+    mut scans_for: F,
+) -> QualityStats
+where
+    F: FnMut(&mut StdRng) -> Vec<Scan>,
+{
+    let runs: Vec<QualityStats> = (0..n_seeds)
+        .map(|s| {
+            let mut rng = StdRng::seed_from_u64(s);
+            let scans = scans_for(&mut rng);
+            evaluate_quality(cfg, &scans, tracker_cfg)
+        })
+        .collect();
+    let k = runs.len() as f64;
+    let avg = |f: fn(&QualityStats) -> f64| runs.iter().map(f).sum::<f64>() / k;
+    QualityStats {
+        mean_ospa: avg(|r| r.mean_ospa),
+        mean_gospa: avg(|r| r.mean_gospa),
+        id_switches: avg(|r| r.id_switches),
+        fragmentations: avg(|r| r.fragmentations),
+        mean_false: avg(|r| r.mean_false),
+        mean_missed: avg(|r| r.mean_missed),
+        mean_tracks: avg(|r| r.mean_tracks),
+        inexact_scans: avg(|r| r.inexact_scans),
     }
 }

@@ -18,7 +18,15 @@ use nalgebra::{Matrix4, Vector2};
 use crate::assignment::{self, FORBIDDEN};
 use crate::ekf::{Ekf, Innovation, MeasurementModel};
 use crate::imm::{Imm, ImmConfig};
+use crate::jpda::{self, JpdaConfig};
 use crate::models::{Radar, RadarMeas, State};
+
+/// Two tracks whose states differ by less than this (chi-square, 4 degrees of freedom, 95%) given their
+/// combined covariance are treated as the same target by JPDA's duplicate merge.
+const MERGE_CHI2: f64 = 9.49;
+
+/// Lowest clutter density (returns per square metre per scan) JPDA will use.
+const JPDA_MIN_DENSITY: f64 = 1.0e-15;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TrackStatus {
@@ -138,6 +146,11 @@ pub struct TrackerConfig {
     /// velocity: new tracks start with probability 0.8 on it and the rest
     /// shared equally across the other models.
     pub imm: Option<ImmConfig>,
+    /// If set, measurements are associated by JPDA instead of GNN assignment: every track is updated with all
+    /// measurements in its gate, weighted by association probability. Single-EKF tracks only (`imm` must be
+    /// `None`). Track confirmation then uses the PDA likelihood ratio when `score` is set, or hit counting
+    /// (a hit is a scan on which the track's miss probability is at most one half) otherwise.
+    pub jpda: Option<JpdaConfig>,
 }
 
 impl Default for TrackerConfig {
@@ -151,6 +164,7 @@ impl Default for TrackerConfig {
             max_misses: 5,
             score: None,
             imm: None,
+            jpda: None,
         }
     }
 }
@@ -160,14 +174,21 @@ pub struct GnnTracker {
     pub cfg: TrackerConfig,
     pub tracks: Vec<Track>,
     next_id: u64,
+    /// Scans on which JPDA had a cluster too large to enumerate and used the independent-PDA fallback.
+    pub jpda_inexact_scans: usize,
 }
 
 impl GnnTracker {
     pub fn new(cfg: TrackerConfig) -> Self {
+        assert!(
+            cfg.jpda.is_none() || cfg.imm.is_none(),
+            "JPDA is implemented for single-EKF tracks; combine it with the IMM in a later milestone"
+        );
         Self {
             cfg,
             tracks: Vec::new(),
             next_id: 0,
+            jpda_inexact_scans: 0,
         }
     }
 
@@ -202,34 +223,39 @@ impl GnnTracker {
             cost.push(cost_row);
         }
 
-        let assigned = assignment::solve(&cost);
-        let mut meas_used = vec![false; meas.len()];
-        let score_cfg = self.cfg.score;
-        for (i, t) in self.tracks.iter_mut().enumerate() {
-            t.age += 1;
-            match assigned[i] {
-                Some(j) => {
-                    let inn = innovations[i][j].expect("assigned pairs are gated in");
-                    if let Some(sc) = score_cfg {
-                        let ln_n = -0.5 * inn.nis()
-                            - std::f64::consts::TAU.ln()
-                            - 0.5 * inn.s.determinant().ln();
-                        let density = sc.clutter_density * meas[j].range.max(1.0);
-                        t.score += sc.pd.min(0.999).ln() + ln_n - density.ln();
+        let meas_used: Vec<bool> = if let Some(jp) = self.cfg.jpda {
+            self.associate_jpda(jp, &innovations, meas, radar)
+        } else {
+            let assigned = assignment::solve(&cost);
+            let mut meas_used = vec![false; meas.len()];
+            let score_cfg = self.cfg.score;
+            for (i, t) in self.tracks.iter_mut().enumerate() {
+                t.age += 1;
+                match assigned[i] {
+                    Some(j) => {
+                        let inn = innovations[i][j].expect("assigned pairs are gated in");
+                        if let Some(sc) = score_cfg {
+                            let ln_n = -0.5 * inn.nis()
+                                - std::f64::consts::TAU.ln()
+                                - 0.5 * inn.s.determinant().ln();
+                            let density = sc.clutter_density * meas[j].range.max(1.0);
+                            t.score += sc.pd.min(0.999).ln() + ln_n - density.ln();
+                        }
+                        t.filter.update(&inn, &meas[j], radar);
+                        t.hits += 1;
+                        t.misses = 0;
+                        meas_used[j] = true;
                     }
-                    t.filter.update(&inn, &meas[j], radar);
-                    t.hits += 1;
-                    t.misses = 0;
-                    meas_used[j] = true;
-                }
-                None => {
-                    if let Some(sc) = score_cfg {
-                        t.score += (1.0 - sc.pd.min(0.999)).ln();
+                    None => {
+                        if let Some(sc) = score_cfg {
+                            t.score += (1.0 - sc.pd.min(0.999)).ln();
+                        }
+                        t.misses += 1;
                     }
-                    t.misses += 1;
                 }
             }
-        }
+            meas_used
+        };
 
         // Status changes and deletions.
         let cfg = &self.cfg;
@@ -250,6 +276,12 @@ impl GnnTracker {
             (TrackStatus::Confirmed, _) => t.misses <= cfg.max_misses,
         });
 
+        // JPDA lets two tracks share one target's measurements instead of starving the second, so duplicates
+        // survive; drop the weaker of any pair that is statistically the same target.
+        if self.cfg.jpda.is_some_and(|jp| jp.merge_duplicates) {
+            self.merge_duplicates();
+        }
+
         // New tentative tracks from unused measurements.
         for (j, z) in meas.iter().enumerate() {
             if !meas_used[j] {
@@ -257,6 +289,117 @@ impl GnnTracker {
                 self.tracks.push(track);
             }
         }
+    }
+
+    /// JPDA association and update for one scan; returns which measurements are explained by existing tracks.
+    fn associate_jpda(
+        &mut self,
+        jp: JpdaConfig,
+        innovations: &[Vec<Option<Innovation>>],
+        meas: &[RadarMeas],
+        radar: &Radar,
+    ) -> Vec<bool> {
+        // detection weight Pd * N(y; 0, S) / lambda for every gated pair
+        let weights: Vec<Vec<Option<f64>>> = innovations
+            .iter()
+            .map(|row| {
+                row.iter()
+                    .enumerate()
+                    .map(|(j, inn)| {
+                        inn.as_ref().map(|inn| {
+                            let n_ij = (-0.5 * inn.nis()).exp()
+                                / (std::f64::consts::TAU * inn.s.determinant().sqrt());
+                            // a zero density would make every weight infinite; floor it (no clutter is then
+                            // modelled as an extremely low density)
+                            let lambda =
+                                jp.clutter_density.max(JPDA_MIN_DENSITY) * meas[j].range.max(1.0);
+                            jp.pd * n_ij / lambda
+                        })
+                    })
+                    .collect()
+            })
+            .collect();
+        let marg = jpda::marginals(&weights, 1.0 - jp.pd, jp.max_events);
+        if !marg.exact {
+            self.jpda_inexact_scans += 1;
+        }
+
+        let scoring = self.cfg.score.is_some();
+        let mut claimed = vec![0.0; meas.len()];
+        for (i, t) in self.tracks.iter_mut().enumerate() {
+            t.age += 1;
+            let mut pairs: Vec<(f64, Innovation)> = Vec::new();
+            for (j, inn) in innovations[i].iter().enumerate() {
+                if let Some(inn) = inn {
+                    pairs.push((marg.beta[i][j], *inn));
+                    claimed[j] += marg.beta[i][j];
+                }
+            }
+            if !pairs.is_empty() {
+                let TrackFilter::Single(ekf) = &mut t.filter else {
+                    unreachable!("JPDA requires single-EKF tracks")
+                };
+                jpda::pda_update(ekf, radar, &pairs, marg.miss[i]);
+            }
+            if scoring {
+                // PDA track likelihood ratio: a miss plus every gated measurement as a possible detection
+                let lr = (1.0 - jp.pd) + weights[i].iter().flatten().sum::<f64>();
+                t.score += lr.ln();
+            }
+            if !pairs.is_empty() && marg.miss[i] <= 0.5 {
+                t.hits += 1;
+                t.misses = 0;
+            } else {
+                t.misses += 1;
+            }
+        }
+        claimed.iter().map(|c| *c >= jp.birth_threshold).collect()
+    }
+
+    /// Drop the weaker of each pair of tracks whose states are statistically indistinguishable. Only pairs
+    /// with at least one confirmed track are considered, so two young tentative tracks born close together
+    /// are left alone. The stronger track is the confirmed one, then the one with more hits, then the older.
+    /// This also merges two *real* targets that move together, which is a known cost of the rule.
+    fn merge_duplicates(&mut self) {
+        let n = self.tracks.len();
+        let mut drop = vec![false; n];
+        let rank = |t: &Track| {
+            (
+                t.status == TrackStatus::Confirmed,
+                t.hits,
+                std::cmp::Reverse(t.id),
+            )
+        };
+        for i in 0..n {
+            for j in i + 1..n {
+                if drop[i] || drop[j] {
+                    continue;
+                }
+                let (ti, tj) = (&self.tracks[i], &self.tracks[j]);
+                if ti.status == TrackStatus::Tentative && tj.status == TrackStatus::Tentative {
+                    continue;
+                }
+                let (TrackFilter::Single(a), TrackFilter::Single(b)) = (&ti.filter, &tj.filter)
+                else {
+                    continue;
+                };
+                let d = a.x - b.x;
+                if let Some(inv) = (a.p + b.p).try_inverse() {
+                    if (d.transpose() * inv * d)[0] < MERGE_CHI2 {
+                        if rank(ti) >= rank(tj) {
+                            drop[j] = true;
+                        } else {
+                            drop[i] = true;
+                        }
+                    }
+                }
+            }
+        }
+        let mut k = 0;
+        self.tracks.retain(|_| {
+            k += 1;
+            !drop[k - 1]
+        });
     }
 
     fn spawn(&mut self, z: &RadarMeas, radar: &Radar) -> Track {

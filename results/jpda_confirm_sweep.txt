@@ -1,0 +1,11 @@
+clutter 100, formation 120 m, 40 seeds
+
+  GNN confirm 12         OSPA  12.6 m  tracks  2.00  false  0.00  ID switches 0.17
+  JPDA confirm 12        OSPA  26.7 m  tracks  2.14  false  0.12  ID switches 0.17
+  JPDA confirm 16        OSPA  22.6 m  tracks  2.11  false  0.09  ID switches 0.17
+  JPDA confirm 20        OSPA  21.5 m  tracks  2.09  false  0.08  ID switches 0.12
+  JPDA confirm 25        OSPA  18.9 m  tracks  2.07  false  0.06  ID switches 0.12
+  JPDA confirm 30        OSPA  17.1 m  tracks  2.05  false  0.04  ID switches 0.03
+  JPDA birth 0.2         OSPA  26.3 m  tracks  2.14  false  0.12  ID switches 0.10
+  JPDA birth 0.5         OSPA  26.7 m  tracks  2.14  false  0.12  ID switches 0.17
+  JPDA birth 0.8         OSPA  27.2 m  tracks  2.15  false  0.12  ID switches 0.17
