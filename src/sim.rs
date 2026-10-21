@@ -206,12 +206,27 @@ pub fn simulate_crossing<R: Rng + ?Sized>(
     speed: f64,
     rng: &mut R,
 ) -> Vec<Scan> {
+    simulate_crossing_angle(cfg, 90.0, miss_distance, speed, rng)
+}
+
+/// Like [`simulate_crossing`] but the two velocities differ in heading by `angle_deg` (90 is the case above).
+///
+/// A shallow angle means the targets have nearly the same velocity, so motion alone barely separates them and
+/// they stay in each other's gate for a long time: relative speed is `2 speed sin(angle / 2)`. Closest approach
+/// is still `miss_distance` before acceleration noise.
+pub fn simulate_crossing_angle<R: Rng + ?Sized>(
+    cfg: &ScenarioConfig,
+    angle_deg: f64,
+    miss_distance: f64,
+    speed: f64,
+    rng: &mut R,
+) -> Vec<Scan> {
     let t_cross = cfg.steps as f64 * cfg.dt / 2.0;
     let crossing = cfg.radar.pos + nalgebra::Vector2::new(5000.0, 0.0);
-    let (s, c) = (PI / 4.0).sin_cos();
+    let (s, c) = (angle_deg.to_radians() / 2.0).sin_cos();
     let va = nalgebra::Vector2::new(speed * c, speed * s);
     let vb = nalgebra::Vector2::new(speed * c, -speed * s);
-    // relative velocity is (0, -2 speed sin 45); shifting B by (d, 0) gives closest approach d
+    // relative velocity is (0, -2 speed sin(angle/2)); shifting B by (d, 0) gives closest approach d
     let delta = nalgebra::Vector2::new(miss_distance, 0.0);
     let a0 = crossing - va * t_cross;
     let b0 = crossing + delta - vb * t_cross;

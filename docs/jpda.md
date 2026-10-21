@@ -44,8 +44,25 @@ At 100 clutter returns per scan and 30 m separation: GNN OSPA 12.3 m, 1.15 ID sw
 - **In clutter JPDA confirms extra false tracks that GNN rejects.** Its OSPA is about twice GNN's at 100 returns per scan. Raising JPDA's confirmation threshold narrows the gap but does not close it (clutter 100, formation 120 m): confirm 12, OSPA 26.7 m and 0.12 false tracks; confirm 20, 21.5 m and 0.08; confirm 30, 17.1 m and 0.04; GNN at 12: 12.6 m and 0.00. So part of the excess is the PDA score being more permissive than the best-measurement score at the same threshold, which is a calibration issue; the rest I have not isolated. Delay to confirmation at the higher thresholds was not measured.
 - **At close separation JPDA has more identity switches than GNN, not fewer.** This is the opposite of the textbook motivation. Possible reasons, not tested: coalescence of the two tracks (the classic JPDA failure when targets stay together), the PDA update's covariance inflation letting tracks drift onto the neighbour, and the merge rule, which fixes switches by fusing and fragmenting the real pair.
 - **The duplicate merge is a blunt tool.** It lowers ID switches at 30 to 60 m but splits the formation (about 1.5 to 3.4 fragmentations per run at 30 to 60 m) because two real, nearby targets with similar velocity are statistically indistinguishable.
-- **The crossing scenario was too easy to show a benefit** (velocity separates the targets), and the side-by-side one shows a cost. A scenario with targets that cross with similar velocities, lower Pd, or a longer time in a shared gate is where JPDA would be expected to help, and I have not run it.
+- **The crossing scenario was too easy to show a benefit** (velocity separates the targets), and the side-by-side one shows a cost. The shallow-angle scenario below is the case where JPDA is expected to help; it did not.
+
+## The harder scenario: shallow-angle crossings
+
+Targets cross with headings 5 to 40 degrees apart (relative speed 2.2 to 17 m/s at 25 m/s each), so they share a gate for many scans, with closest approach 0 or 40 m, Pd 0.9 or 0.7, and 0 or 20 clutter returns per scan. Both trackers see identical scans on each of 60 seeds, so the table gives paired differences (JPDA minus GNN, mean with a 95% interval of 1.96 standard errors; positive is worse for JPDA). Full output: `results/jpda_shallow.txt`, from `examples/jpda_shallow.rs`.
+
+| Pd | Clutter | Angle | GOSPA difference | ID-switch difference per run |
+| --- | --- | --- | --- | --- |
+| 0.9 | 0 | 5 deg | +1.5 to +2.3 m (+-1.3) | +0.22 (+-0.16) at 0 m, none at 40 m |
+| 0.9 | 0 | 10 to 40 deg | +0.0 to +1.2 m (+-0.4 to 0.9) | +0.07 to +0.20, mostly within the interval |
+| 0.9 | 20 | 5 to 40 deg | +2.5 to +4.7 m (+-1.0 to 1.7) | +0.00 to +0.37, mostly within the interval |
+| 0.7 | 0 | 5 deg | +2.1 to +2.9 m (+-1.7 to 1.9) | +0.03 to +0.30 (+-0.2 to 0.3) |
+| 0.7 | 0 | 10 to 40 deg | -0.1 to +1.3 m | +0.02 to +0.18 |
+| 0.7 | 20 | 5 to 40 deg | +4.2 to +7.8 m (+-1.6 to 2.4) | -0.02 to +0.60, mostly within the interval |
+
+**JPDA did not beat GNN in any of the 32 cells.** The GOSPA difference is never significantly negative and is significantly positive (interval excludes zero) in 23 of 32 cells, including every clutter cell. Identity switches are higher for JPDA in 28 of 32 cells and significantly higher in 11; none is significantly lower. With 32 cells at 95% a few chance exceedances are expected, but the direction is consistent. Where JPDA is worse in GOSPA the cause is probably the clutter result above (extra false tracks), not identity errors; I did not separate the two in this run.
+
+Why the scenario may still not be hard enough, which I have not tested: GNN's own identity-switch rate is low here (0.03 to 0.6 per run), so there is little for JPDA to remove, and the simulator never merges two targets into one measurement (a real radar has a resolution cell below which two returns become one). Ambiguity here comes only from measurement noise (about 15 m in range, 15 m in cross-range at 5 km), so at 0 m closest approach the targets are ambiguous for a few scans and no more. A merged-measurement or unresolved-target model is the setting where JPDA's soft association is usually argued to matter, and it is not built.
 
 ## Limits
 
-Simulated, two targets, Pd 0.9, a known clutter density and Pd, 15 to 40 seeds per cell without confidence intervals, single-EKF tracks only. JPDA's exact enumeration is expensive: the heaviest clutter case took minutes per cell and fell back to independent PDA on up to 0.1 scans per run (the cap is 5,000 events per cluster). Variants that address coalescence (for example JPDA*, or coupled-filter formulations), a tuned birth and confirmation rule for JPDA, and the IMM combination are not tried.
+Simulated, two targets, Pd 0.9, a known clutter density and Pd, 15 to 40 seeds per cell without confidence intervals, single-EKF tracks only. JPDA's exact enumeration is expensive: the heaviest clutter case took minutes per cell and fell back to independent PDA on up to 0.1 scans per run (the cap is 5,000 events per cluster). The shallow-angle scenario adds Pd 0.7 but still has known Pd and clutter density, no merged measurements, and two targets. Variants that address coalescence (for example JPDA*, or coupled-filter formulations), a tuned birth and confirmation rule for JPDA, and the IMM combination are not tried.

@@ -166,3 +166,34 @@ fn jpda_estimates_stay_consistent_in_clutter() {
         );
     }
 }
+
+#[test]
+fn shallow_crossing_has_the_requested_relative_speed_and_miss_distance() {
+    use fusetrack::sim::{simulate_crossing, simulate_crossing_angle};
+    let cfg = ScenarioConfig {
+        radar: radar(),
+        dt: 1.0,
+        steps: 100,
+        n_targets: 2,
+        sigma_accel: 0.0,
+        pd: 1.0,
+        clutter_rate: 0.0,
+        r_max: 15000.0,
+    };
+    // 90 degrees reproduces the original scenario exactly for the same seed
+    let a = simulate_crossing(&cfg, 40.0, 25.0, &mut StdRng::seed_from_u64(3));
+    let b = simulate_crossing_angle(&cfg, 90.0, 40.0, 25.0, &mut StdRng::seed_from_u64(3));
+    assert_eq!(a.len(), b.len());
+    for (x, y) in a.iter().zip(&b) {
+        assert_eq!(x.truth, y.truth);
+    }
+    // with no acceleration noise the relative speed is 2 v sin(angle / 2) and the closest approach is the set miss
+    let s = simulate_crossing_angle(&cfg, 10.0, 40.0, 25.0, &mut StdRng::seed_from_u64(3));
+    let rel = |k: usize| s[k].truth[1] - s[k].truth[0];
+    let speed = (rel(10)[2].powi(2) + rel(10)[3].powi(2)).sqrt();
+    assert!((speed - 2.0 * 25.0 * (5.0f64).to_radians().sin()).abs() < 1e-9);
+    let closest = (0..s.len())
+        .map(|k| (rel(k)[0].powi(2) + rel(k)[1].powi(2)).sqrt())
+        .fold(f64::INFINITY, f64::min);
+    assert!((closest - 40.0).abs() < 1.0, "closest approach {closest}");
+}

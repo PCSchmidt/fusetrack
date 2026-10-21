@@ -1,0 +1,43 @@
+Two targets crossing at a shallow angle, 25 m/s, 60 paired seeds, 100 scans
+cells: mean (95% interval). Difference = JPDA - GNN; negative is better for every metric.
+
+Pd 0.9, clutter 0 returns/scan
+  angle    5 deg, closest   0 m | GOSPA GNN   18.2 JPDA   19.8 diff   +1.5 (1.3) | ID sw GNN 0.20 JPDA 0.42 diff +0.22 (0.16) | missed diff +0.00 (0.00) | inexact 0.0
+  angle    5 deg, closest  40 m | GOSPA GNN   18.3 JPDA   20.5 diff   +2.3 (1.3) | ID sw GNN 0.55 JPDA 0.53 diff -0.02 (0.24) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   10 deg, closest   0 m | GOSPA GNN   18.2 JPDA   18.6 diff   +0.4 (0.6) | ID sw GNN 0.05 JPDA 0.13 diff +0.08 (0.11) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   10 deg, closest  40 m | GOSPA GNN   18.2 JPDA   19.4 diff   +1.2 (0.9) | ID sw GNN 0.22 JPDA 0.42 diff +0.20 (0.23) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   20 deg, closest   0 m | GOSPA GNN   18.2 JPDA   18.3 diff   +0.1 (0.4) | ID sw GNN 0.15 JPDA 0.12 diff -0.03 (0.15) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   20 deg, closest  40 m | GOSPA GNN   18.2 JPDA   18.8 diff   +0.6 (0.6) | ID sw GNN 0.18 JPDA 0.38 diff +0.20 (0.22) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   40 deg, closest   0 m | GOSPA GNN   18.2 JPDA   18.2 diff   +0.0 (0.4) | ID sw GNN 0.12 JPDA 0.18 diff +0.07 (0.14) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   40 deg, closest  40 m | GOSPA GNN   18.2 JPDA   18.3 diff   +0.1 (0.5) | ID sw GNN 0.12 JPDA 0.18 diff +0.07 (0.14) | missed diff +0.00 (0.00) | inexact 0.0
+
+Pd 0.9, clutter 20 returns/scan
+  angle    5 deg, closest   0 m | GOSPA GNN   17.8 JPDA   22.5 diff   +4.7 (1.6) | ID sw GNN 0.20 JPDA 0.45 diff +0.25 (0.26) | missed diff +0.00 (0.00) | inexact 0.0
+  angle    5 deg, closest  40 m | GOSPA GNN   18.0 JPDA   22.2 diff   +4.2 (1.7) | ID sw GNN 0.38 JPDA 0.42 diff +0.03 (0.22) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   10 deg, closest   0 m | GOSPA GNN   17.7 JPDA   21.1 diff   +3.4 (1.2) | ID sw GNN 0.12 JPDA 0.48 diff +0.37 (0.28) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   10 deg, closest  40 m | GOSPA GNN   17.9 JPDA   21.4 diff   +3.4 (1.2) | ID sw GNN 0.28 JPDA 0.52 diff +0.23 (0.31) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   20 deg, closest   0 m | GOSPA GNN   17.8 JPDA   20.6 diff   +2.8 (1.2) | ID sw GNN 0.13 JPDA 0.45 diff +0.32 (0.23) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   20 deg, closest  40 m | GOSPA GNN   17.8 JPDA   20.6 diff   +2.8 (1.1) | ID sw GNN 0.03 JPDA 0.23 diff +0.20 (0.15) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   40 deg, closest   0 m | GOSPA GNN   17.7 JPDA   20.3 diff   +2.6 (1.1) | ID sw GNN 0.05 JPDA 0.18 diff +0.13 (0.14) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   40 deg, closest  40 m | GOSPA GNN   17.7 JPDA   20.2 diff   +2.5 (1.0) | ID sw GNN 0.10 JPDA 0.10 diff +0.00 (0.19) | missed diff +0.00 (0.00) | inexact 0.0
+
+Pd 0.7, clutter 0 returns/scan
+  angle    5 deg, closest   0 m | GOSPA GNN   21.4 JPDA   23.5 diff   +2.1 (1.7) | ID sw GNN 0.60 JPDA 0.63 diff +0.03 (0.20) | missed diff +0.00 (0.00) | inexact 0.0
+  angle    5 deg, closest  40 m | GOSPA GNN   21.4 JPDA   24.3 diff   +2.9 (1.9) | ID sw GNN 0.60 JPDA 0.90 diff +0.30 (0.28) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   10 deg, closest   0 m | GOSPA GNN   21.1 JPDA   22.2 diff   +1.1 (0.9) | ID sw GNN 0.30 JPDA 0.48 diff +0.18 (0.17) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   10 deg, closest  40 m | GOSPA GNN   21.1 JPDA   22.4 diff   +1.3 (1.2) | ID sw GNN 0.40 JPDA 0.58 diff +0.18 (0.27) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   20 deg, closest   0 m | GOSPA GNN   21.2 JPDA   21.3 diff   +0.1 (0.5) | ID sw GNN 0.35 JPDA 0.47 diff +0.12 (0.09) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   20 deg, closest  40 m | GOSPA GNN   21.1 JPDA   21.4 diff   +0.3 (0.6) | ID sw GNN 0.30 JPDA 0.38 diff +0.08 (0.08) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   40 deg, closest   0 m | GOSPA GNN   21.1 JPDA   21.0 diff   -0.0 (0.4) | ID sw GNN 0.23 JPDA 0.27 diff +0.03 (0.05) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   40 deg, closest  40 m | GOSPA GNN   21.1 JPDA   21.0 diff   -0.1 (0.3) | ID sw GNN 0.23 JPDA 0.25 diff +0.02 (0.03) | missed diff +0.00 (0.00) | inexact 0.0
+
+Pd 0.7, clutter 20 returns/scan
+  angle    5 deg, closest   0 m | GOSPA GNN   20.9 JPDA   27.7 diff   +6.7 (2.0) | ID sw GNN 0.48 JPDA 0.87 diff +0.38 (0.29) | missed diff +0.00 (0.00) | inexact 0.0
+  angle    5 deg, closest  40 m | GOSPA GNN   20.9 JPDA   28.7 diff   +7.8 (2.4) | ID sw GNN 0.27 JPDA 0.87 diff +0.60 (0.35) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   10 deg, closest   0 m | GOSPA GNN   20.9 JPDA   25.4 diff   +4.4 (1.6) | ID sw GNN 0.23 JPDA 0.37 diff +0.13 (0.14) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   10 deg, closest  40 m | GOSPA GNN   20.8 JPDA   27.1 diff   +6.3 (1.9) | ID sw GNN 0.27 JPDA 0.52 diff +0.25 (0.19) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   20 deg, closest   0 m | GOSPA GNN   20.7 JPDA   25.2 diff   +4.5 (1.7) | ID sw GNN 0.17 JPDA 0.32 diff +0.15 (0.14) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   20 deg, closest  40 m | GOSPA GNN   20.7 JPDA   25.9 diff   +5.2 (1.9) | ID sw GNN 0.23 JPDA 0.25 diff +0.02 (0.17) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   40 deg, closest   0 m | GOSPA GNN   20.9 JPDA   25.1 diff   +4.2 (2.1) | ID sw GNN 0.30 JPDA 0.28 diff -0.02 (0.17) | missed diff +0.00 (0.00) | inexact 0.0
+  angle   40 deg, closest  40 m | GOSPA GNN   20.7 JPDA   24.9 diff   +4.3 (1.9) | ID sw GNN 0.27 JPDA 0.30 diff +0.03 (0.08) | missed diff +0.00 (0.00) | inexact 0.0
+
