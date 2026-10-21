@@ -197,3 +197,26 @@ fn shallow_crossing_has_the_requested_relative_speed_and_miss_distance() {
         .fold(f64::INFINITY, f64::min);
     assert!((closest - 40.0).abs() < 1.0, "closest approach {closest}");
 }
+
+#[test]
+fn unresolved_returns_merge_to_their_mean_and_distant_ones_do_not() {
+    use fusetrack::sim::{merge_unresolved, Scan};
+    let m = |range: f64, bearing: f64| RadarMeas { range, bearing };
+    let mk = |meas| Scan {
+        truth: vec![],
+        meas,
+    };
+    // two returns 20 m apart in range and 10 m in cross-range at 5 km merge; a far third stays
+    let mut scans = vec![mk(vec![m(5000.0, 0.0), m(5020.0, 0.002), m(9000.0, 1.0)])];
+    merge_unresolved(&mut scans, 30.0, 40.0);
+    assert_eq!(scans[0].meas.len(), 2);
+    let near = scans[0].meas.iter().find(|z| z.range < 6000.0).unwrap();
+    assert!((near.range - 5010.0).abs() < 1e-9 && (near.bearing - 0.001).abs() < 1e-12);
+    // a chain merges until no pair is left, and a zero cell changes nothing
+    let mut chain = vec![mk(vec![m(5000.0, 0.0), m(5025.0, 0.0), m(5050.0, 0.0)])];
+    merge_unresolved(&mut chain, 30.0, 40.0);
+    assert!(chain[0].meas.len() <= 2);
+    let mut same = vec![mk(vec![m(5000.0, 0.0), m(5001.0, 0.0)])];
+    merge_unresolved(&mut same, 0.0, 0.0);
+    assert_eq!(same[0].meas.len(), 2);
+}

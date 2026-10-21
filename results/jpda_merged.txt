@@ -1,0 +1,43 @@
+Finite resolution: close returns merge into one detection. Pd 0.9, 25 m/s, 60 paired seeds, 100 scans
+Difference = JPDA - GNN; negative is better for every metric.
+
+clutter 0 returns/scan
+  crossing   5 deg, 0 m cell  0x 0 m | merges/run   0.0 | GOSPA GNN   18.2 JPDA   19.8 diff   +1.5 (1.3) | ID sw GNN 0.20 JPDA 0.42 diff +0.22 (0.16) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.00 JPDA 0.37
+  crossing   5 deg, 0 m cell 30x40 m | merges/run   0.8 | GOSPA GNN   18.3 JPDA   19.9 diff   +1.6 (1.3) | ID sw GNN 0.27 JPDA 0.42 diff +0.15 (0.17) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.00 JPDA 0.38
+  crossing   5 deg, 0 m cell 60x80 m | merges/run   6.3 | GOSPA GNN   23.9 JPDA   25.0 diff   +1.1 (1.2) | ID sw GNN 1.43 JPDA 1.58 diff +0.15 (0.34) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.88 JPDA 1.48
+  crossing  10 deg, 0 m cell  0x 0 m | merges/run   0.0 | GOSPA GNN   18.2 JPDA   18.6 diff   +0.4 (0.6) | ID sw GNN 0.05 JPDA 0.13 diff +0.08 (0.11) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.00 JPDA 0.10
+  crossing  10 deg, 0 m cell 30x40 m | merges/run   0.3 | GOSPA GNN   18.2 JPDA   18.8 diff   +0.6 (0.7) | ID sw GNN 0.08 JPDA 0.15 diff +0.07 (0.09) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.00 JPDA 0.08
+  crossing  10 deg, 0 m cell 60x80 m | merges/run   2.0 | GOSPA GNN   19.3 JPDA   20.3 diff   +0.9 (0.8) | ID sw GNN 0.37 JPDA 0.40 diff +0.03 (0.15) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.17 JPDA 0.38
+  crossing  20 deg, 0 m cell  0x 0 m | merges/run   0.0 | GOSPA GNN   18.2 JPDA   18.3 diff   +0.1 (0.4) | ID sw GNN 0.15 JPDA 0.12 diff -0.03 (0.15) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.00 JPDA 0.05
+  crossing  20 deg, 0 m cell 30x40 m | merges/run   0.2 | GOSPA GNN   18.2 JPDA   18.4 diff   +0.2 (0.5) | ID sw GNN 0.08 JPDA 0.17 diff +0.08 (0.11) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.00 JPDA 0.05
+  crossing  20 deg, 0 m cell 60x80 m | merges/run   1.1 | GOSPA GNN   18.8 JPDA   19.1 diff   +0.3 (0.6) | ID sw GNN 0.33 JPDA 0.27 diff -0.07 (0.23) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.08 JPDA 0.15
+  side by side  30 m    cell  0x 0 m | merges/run   0.0 | GOSPA GNN   17.6 JPDA   25.6 diff   +8.0 (2.2) | ID sw GNN 1.63 JPDA 1.45 diff -0.18 (0.56) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.02 JPDA 3.22
+  side by side  30 m    cell 30x40 m | merges/run   5.2 | GOSPA GNN   18.6 JPDA   25.6 diff   +7.0 (1.9) | ID sw GNN 1.80 JPDA 1.73 diff -0.07 (0.54) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.78 JPDA 3.22
+  side by side  30 m    cell 60x80 m | merges/run  14.5 | GOSPA GNN   28.2 JPDA   30.3 diff   +2.1 (1.2) | ID sw GNN 1.47 JPDA 1.82 diff +0.35 (0.39) | missed GNN 0.00 JPDA 0.00 | frag GNN 3.52 JPDA 4.05
+  side by side  60 m    cell  0x 0 m | merges/run   0.0 | GOSPA GNN   17.6 JPDA   21.2 diff   +3.6 (1.7) | ID sw GNN 0.62 JPDA 1.55 diff +0.93 (0.38) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.00 JPDA 1.62
+  side by side  60 m    cell 30x40 m | merges/run   2.5 | GOSPA GNN   17.9 JPDA   21.0 diff   +3.1 (1.5) | ID sw GNN 0.85 JPDA 1.85 diff +1.00 (0.49) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.22 JPDA 1.80
+  side by side  60 m    cell 60x80 m | merges/run  10.8 | GOSPA GNN   24.6 JPDA   26.3 diff   +1.7 (1.0) | ID sw GNN 1.98 JPDA 2.12 diff +0.13 (0.46) | missed GNN 0.00 JPDA 0.00 | frag GNN 2.20 JPDA 3.13
+  side by side 120 m    cell  0x 0 m | merges/run   0.0 | GOSPA GNN   17.6 JPDA   18.2 diff   +0.6 (0.8) | ID sw GNN 0.22 JPDA 0.38 diff +0.17 (0.16) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.02 JPDA 0.17
+  side by side 120 m    cell 30x40 m | merges/run   0.4 | GOSPA GNN   17.7 JPDA   18.4 diff   +0.7 (0.9) | ID sw GNN 0.17 JPDA 0.37 diff +0.20 (0.20) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.03 JPDA 0.23
+  side by side 120 m    cell 60x80 m | merges/run   2.3 | GOSPA GNN   19.2 JPDA   19.2 diff   -0.0 (0.6) | ID sw GNN 0.37 JPDA 0.53 diff +0.17 (0.16) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.23 JPDA 0.40
+
+clutter 20 returns/scan
+  crossing   5 deg, 0 m cell  0x 0 m | merges/run   0.0 | GOSPA GNN   17.8 JPDA   22.5 diff   +4.7 (1.6) | ID sw GNN 0.20 JPDA 0.45 diff +0.25 (0.26) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.02 JPDA 0.43
+  crossing   5 deg, 0 m cell 30x40 m | merges/run   1.2 | GOSPA GNN   18.6 JPDA   22.5 diff   +3.9 (1.5) | ID sw GNN 0.25 JPDA 0.45 diff +0.20 (0.21) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.15 JPDA 0.35
+  crossing   5 deg, 0 m cell 60x80 m | merges/run   7.0 | GOSPA GNN   24.2 JPDA   27.3 diff   +3.1 (1.4) | ID sw GNN 1.40 JPDA 1.60 diff +0.20 (0.41) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.85 JPDA 1.55
+  crossing  10 deg, 0 m cell  0x 0 m | merges/run   0.0 | GOSPA GNN   17.7 JPDA   21.1 diff   +3.4 (1.2) | ID sw GNN 0.12 JPDA 0.48 diff +0.37 (0.28) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.00 JPDA 0.12
+  crossing  10 deg, 0 m cell 30x40 m | merges/run   0.6 | GOSPA GNN   17.9 JPDA   21.3 diff   +3.4 (1.2) | ID sw GNN 0.08 JPDA 0.30 diff +0.22 (0.19) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.05 JPDA 0.18
+  crossing  10 deg, 0 m cell 60x80 m | merges/run   2.9 | GOSPA GNN   19.1 JPDA   23.0 diff   +3.8 (1.5) | ID sw GNN 0.52 JPDA 0.83 diff +0.32 (0.31) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.20 JPDA 0.52
+  crossing  20 deg, 0 m cell  0x 0 m | merges/run   0.0 | GOSPA GNN   17.8 JPDA   20.6 diff   +2.8 (1.2) | ID sw GNN 0.13 JPDA 0.45 diff +0.32 (0.23) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.00 JPDA 0.15
+  crossing  20 deg, 0 m cell 30x40 m | merges/run   0.5 | GOSPA GNN   17.8 JPDA   20.8 diff   +3.0 (1.3) | ID sw GNN 0.17 JPDA 0.38 diff +0.22 (0.16) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.00 JPDA 0.17
+  crossing  20 deg, 0 m cell 60x80 m | merges/run   1.7 | GOSPA GNN   18.4 JPDA   21.3 diff   +2.9 (1.2) | ID sw GNN 0.42 JPDA 0.60 diff +0.18 (0.27) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.08 JPDA 0.25
+  side by side  30 m    cell  0x 0 m | merges/run   0.0 | GOSPA GNN   17.2 JPDA   29.0 diff  +11.7 (2.5) | ID sw GNN 1.40 JPDA 1.50 diff +0.10 (0.50) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.07 JPDA 3.07
+  side by side  30 m    cell 30x40 m | merges/run   5.7 | GOSPA GNN   18.7 JPDA   29.9 diff  +11.3 (2.3) | ID sw GNN 1.47 JPDA 1.73 diff +0.27 (0.61) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.97 JPDA 3.05
+  side by side  30 m    cell 60x80 m | merges/run  15.4 | GOSPA GNN   31.9 JPDA   34.5 diff   +2.6 (1.6) | ID sw GNN 1.38 JPDA 1.52 diff +0.13 (0.33) | missed GNN 0.00 JPDA 0.00 | frag GNN 4.02 JPDA 4.53
+  side by side  60 m    cell  0x 0 m | merges/run   0.0 | GOSPA GNN   17.2 JPDA   23.7 diff   +6.5 (1.9) | ID sw GNN 0.47 JPDA 1.63 diff +1.17 (0.45) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.00 JPDA 1.78
+  side by side  60 m    cell 30x40 m | merges/run   2.7 | GOSPA GNN   17.9 JPDA   23.7 diff   +5.7 (1.6) | ID sw GNN 0.55 JPDA 1.65 diff +1.10 (0.41) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.12 JPDA 1.73
+  side by side  60 m    cell 60x80 m | merges/run  11.9 | GOSPA GNN   25.7 JPDA   29.9 diff   +4.2 (1.4) | ID sw GNN 1.28 JPDA 2.23 diff +0.95 (0.41) | missed GNN 0.00 JPDA 0.01 | frag GNN 2.45 JPDA 3.25
+  side by side 120 m    cell  0x 0 m | merges/run   0.0 | GOSPA GNN   17.1 JPDA   19.4 diff   +2.3 (1.0) | ID sw GNN 0.20 JPDA 0.10 diff -0.10 (0.25) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.00 JPDA 0.07
+  side by side 120 m    cell 30x40 m | merges/run   0.7 | GOSPA GNN   17.2 JPDA   19.8 diff   +2.5 (1.1) | ID sw GNN 0.15 JPDA 0.18 diff +0.03 (0.14) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.02 JPDA 0.15
+  side by side 120 m    cell 60x80 m | merges/run   3.2 | GOSPA GNN   19.2 JPDA   21.2 diff   +2.0 (0.8) | ID sw GNN 0.48 JPDA 0.47 diff -0.02 (0.23) | missed GNN 0.00 JPDA 0.00 | frag GNN 0.25 JPDA 0.48
+

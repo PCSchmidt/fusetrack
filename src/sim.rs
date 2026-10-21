@@ -265,6 +265,39 @@ pub fn simulate_parallel<R: Rng + ?Sized>(
     scans_from_trajectories(cfg, &trajectories, rng)
 }
 
+/// Merge returns that a finite-resolution radar could not separate.
+///
+/// Any two measurements closer than `res_range` in range and `res_cross` metres in cross-range (range times
+/// bearing difference) become one detection at their mean, applied repeatedly until no pair is left. Clutter
+/// merges too, as it would. This models the resolution cell below which two targets give a single return, which
+/// the plain simulator never does. `res_range <= 0` or `res_cross <= 0` leaves the scans unchanged.
+pub fn merge_unresolved(scans: &mut [Scan], res_range: f64, res_cross: f64) {
+    if res_range <= 0.0 || res_cross <= 0.0 {
+        return;
+    }
+    for scan in scans.iter_mut() {
+        'again: loop {
+            for i in 0..scan.meas.len() {
+                for j in (i + 1)..scan.meas.len() {
+                    let (a, b) = (scan.meas[i], scan.meas[j]);
+                    let mid_range = 0.5 * (a.range + b.range);
+                    if (a.range - b.range).abs() < res_range
+                        && mid_range * (a.bearing - b.bearing).abs() < res_cross
+                    {
+                        scan.meas[i] = RadarMeas {
+                            range: mid_range,
+                            bearing: 0.5 * (a.bearing + b.bearing),
+                        };
+                        scan.meas.swap_remove(j);
+                        continue 'again;
+                    }
+                }
+            }
+            break;
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
