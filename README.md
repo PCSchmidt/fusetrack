@@ -4,7 +4,7 @@
 
 Multi-sensor fusion tracking for counter-UAS, in Rust: a scenario simulator, filters, and (planned) a head-to-head benchmark of classical vs. learned data association.
 
-**Status: v0.4, in progress.** A multi-target GNN tracker (gating, score-based track confirmation, OSPA scoring) runs on simulated radar data with missed detections, clutter and manoeuvring targets, with an optional IMM filter on each track. JPDA, additional sensors and the learned-association comparison are not built yet; see the [roadmap](docs/roadmap.md).
+**Status: v0.4, in progress.** A multi-target GNN tracker (gating, score-based track confirmation, OSPA scoring) runs on simulated radar data with missed detections, clutter and manoeuvring targets, with an optional IMM filter on each track. JPDA is built and measured, with a negative result (see below); additional sensors and the learned-association comparison are not built yet; see the [roadmap](docs/roadmap.md).
 
 Part of [physical-ai-portfolio](https://github.com/PCSchmidt/physical-ai-portfolio).
 
@@ -21,7 +21,8 @@ Fielded counter-UAS systems fuse noisy, asynchronous reports from radar, EO/IR a
 - **Assignment** (`assignment`): Hungarian algorithm, checked against brute force on random matrices.
 - **GNN tracker** (`tracker`): chi-square gating, cost = NIS + ln|S|, optimal one-to-one assignment, tentative tracks confirmed on 3 hits in 5 scans (default) or by a sequential likelihood-ratio score, confirmed tracks deleted after 5 consecutive misses.
 - **IMM** (`imm`): constant-velocity plus coordinated-turn (±ω) models with Markov switching, moment-matched mixing and combination. Derivation in [docs/imm-derivation.md](docs/imm-derivation.md).
-- **Metrics** (`metrics`, `eval`): OSPA (cutoff 200 m, order 2) per scan, averaged over seeded runs.
+- **Metrics** (`metrics`, `eval`): OSPA and GOSPA (cutoff 200 m, order 2) per scan, ID switches and fragmentations, averaged over seeded runs.
+- **JPDA** (`jpda`): joint association by exact event enumeration per cluster (with a cap and an independent-PDA fallback) and the PDA update, as an alternative to GNN assignment for single-EKF tracks. Details and results in [docs/jpda.md](docs/jpda.md).
 
 ## Results
 
@@ -126,6 +127,10 @@ Same radar and tracker as above (3-of-5 confirmation), but the 5 targets now man
 
 The pattern matches the single-target result. A CV tracker tuned for straight flight (σ_a = 0.5) loses and re-creates tracks in turns (about 0.45 false tracks per scan), which inflates OSPA by 4x. Inflating its process noise (σ_a = 3.0) recovers most of that. The IMM is best when its turn models are close to the truth (13.1 m vs. 18.5 m at the matched rate, 13.9 m vs. 15.9 m at ω = 0.06) and slightly worse than the inflated CV tracker when they are far off (24.0 m vs. 23.0 m at ω = 0.14). The 13 m floor is mostly measurement noise: the clean, non-manoeuvring scenario scores 12.5 m. Rows at clutter 10 for ω = 0.06 and 0.14 are in the example output and follow the same ordering. Reproduce with `cargo run --release --example imm_tracker` (a few seconds). The IMM costs roughly three filters per track, so it was not run at the 200-return clutter level.
 
+### JPDA vs. GNN (a negative result)
+
+On two scripted scenarios (targets crossing at 90 degrees, and flying side by side) with Pd 0.9 and clutter up to 300 returns per scan, JPDA matched GNN without clutter but was worse with it: at 100 returns per scan its OSPA was about 25 m (24.6 m averaged over the crossing cases) against 12.6 m, because it confirms extra false tracks (raising its confirmation threshold narrows but does not close the gap). At 30 to 60 m separation it made more identity switches than GNN (2.67 against 1.23 per run at 30 m) instead of fewer, and a duplicate-track merge trades the switches for fragmentation. The crossing scenario was too easy (velocity separates the targets), a harder one has not been run, and coalescence-avoiding variants were not tried. Full tables and caveats: [docs/jpda.md](docs/jpda.md). Reproduce with `cargo run --release --example jpda_vs_gnn` (tens of minutes at the heaviest clutter), `jpda_formation` and `jpda_confirm_sweep`.
+
 ## Limitations
 
 - One sensor.
@@ -133,7 +138,7 @@ The pattern matches the single-target result. A CV tracker tuned for straight fl
 - The IMM uses fixed turn rates (±0.10 rad/s). The turn rate is not estimated, and a strong mismatch removes its advantage.
 - Targets are present for the whole scenario (no births or deaths), and clutter is uniform and independent between scans.
 - The score-based confirmation assumes known Pd and clutter density.
-- Hard assignment (GNN) only; a track is initialised from one measurement with isotropic position uncertainty and zero velocity.
+- JPDA works with single-EKF tracks only and is expensive at high clutter; otherwise hard assignment (GNN). A track is initialised from one measurement with isotropic position uncertainty and zero velocity.
 - Simulated data throughout, generated from the same motion model the filter assumes, which is the easy case. No real sensor data.
 - Results are averages over a modest number of seeds, with no confidence intervals yet.
 
@@ -146,13 +151,16 @@ cargo run --release --example clutter_sweep
 cargo run --release --example imm_maneuver
 cargo run --release --example imm_tracker
 cargo run --release --example clutter_diagnose
+cargo run --release --example jpda_vs_gnn        # slow at heavy clutter
+cargo run --release --example jpda_formation
+cargo run --release --example jpda_confirm_sweep
 ```
 
 Requires a stable Rust toolchain. CI runs `fmt`, `clippy -D warnings` and the tests.
 
 ## Planned
 
-JPDA association, ID-switch and fragmentation metrics, EO bearing-only and RF sensors, OSPA/GOSPA evaluation, out-of-sequence measurement handling, a learned association model benchmarked against classical baselines, and Cursor-on-Target output.
+A JPDA variant that avoids coalescence and a harder scenario for it, JPDA with the IMM, EO bearing-only and RF sensors, out-of-sequence measurement handling, a learned association model benchmarked against classical baselines, and Cursor-on-Target output.
 
 ## Scope
 
