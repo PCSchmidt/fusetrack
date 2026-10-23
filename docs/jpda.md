@@ -5,7 +5,7 @@ JPDA is implemented, tested and measured. **On the scenarios here it does not be
 ## What was built
 
 - `jpda.rs`: joint association probabilities by exact enumeration of joint events within each cluster of tracks that share gated measurements, with a cap on events per cluster (default 5,000) beyond which a cluster falls back to independent per-track PDA and the scan is counted in `jpda_inexact_scans`; and the PDA state and covariance update (combined innovation plus the spread-of-the-means term).
-- `tracker.rs`: `TrackerConfig::jpda` swaps the Hungarian assignment for JPDA. Single-EKF tracks only; combining it with the IMM is refused with an error. With score-based confirmation, a track's score uses the PDA likelihood ratio `(1 - Pd) + sum_j Pd N_j / lambda_j`; a hit is a scan on which the track's miss probability is at most one half; a measurement starts a new tentative track when its total association probability across tracks is below a threshold (0.5). An optional duplicate-track merge drops the weaker of two statistically identical tracks.
+- `tracker.rs`: `TrackerConfig::jpda` swaps the Hungarian assignment for JPDA. Works with single-EKF tracks and, since the last study below, with IMM tracks. With score-based confirmation, a track's score uses the PDA likelihood ratio `(1 - Pd) + sum_j Pd N_j / lambda_j`; a hit is a scan on which the track's miss probability is at most one half; a measurement starts a new tentative track when its total association probability across tracks is below a threshold (0.5). An optional duplicate-track merge drops the weaker of two statistically identical tracks.
 - Evaluation: GOSPA (alpha = 2), ID switches and fragmentations (`eval::evaluate_quality`), and two scripted scenarios, `simulate_crossing` (two targets crossing at 90 degrees with a set closest approach) and `simulate_parallel` (two targets side by side, same velocity, a set separation).
 
 ## Checks that pass
@@ -73,6 +73,23 @@ The remaining untested explanation was that the simulator never merges two close
 
 This was the last scenario change I had in mind for the question "when does JPDA beat GNN here". The honest answer from this study is: not in any of about 100 cells across crossings, formations, two detection probabilities, clutter, and merged returns. That is a statement about this implementation and these scenarios (known Pd and clutter density, exact enumeration with a cap, track confirmation by score, two targets), not about JPDA in general; a better-tuned JPDA, a coalescence-avoiding variant, or a larger target count could differ.
 
+### JPDA with the IMM
+
+The one combination I had refused to build is now built: each mode filter of an IMM track gets a PDA update with its own innovations and the association probabilities from the joint events, and each mode's probability is reweighted by its PDA likelihood of the whole measurement set, `(1 - Pd) + sum Pd N / lambda`. The association weights themselves come from the track's combined (moment-matched) prediction, an approximation; a mixture over the modes would be more exact. Unit tests: with one certain measurement it equals the plain IMM update (state and mode probabilities); with no measurement it changes nothing; and on a noise-free turning target the turning modes take over (over 80% of the probability within 25 scans).
+
+Study (`examples/jpda_imm.rs`, `results/jpda_imm.txt`): two targets crossing at 10 or 20 degrees with closest approach 0 or 40 m, one of them turning for 20 s as they meet (gentle: 0.04 rad/s, about 1 m/s^2 sideways; hard: 0.10 rad/s, about 2.5 m/s^2), Pd 0.9 and 0.7, clutter 0, 20 and 60 returns per scan, 40 paired seeds per cell, 48 cells per comparison. Cell counts below are "interval excludes zero".
+
+| Comparison | GOSPA significantly better | GOSPA significantly worse | ID switches better / worse |
+| --- | --- | --- | --- |
+| IMM under GNN (gentle turn) | 4 of 24 | 0 | 0 / 0 |
+| IMM under GNN (hard turn) | **24 of 24** | 0 | 7 / 0 |
+| IMM under JPDA | 19 of 48 | 7 | 4 / 1 |
+| **JPDA given the IMM** (GNN+IMM to JPDA+IMM) | **0 of 48** | **38** | 0 / 12 |
+
+- **The IMM works.** With a hard turn it improves the GNN tracker in every cell (mean GOSPA difference -1.8 to -2.5 m), so the manoeuvre model is doing its job; with a gentle turn the single filter's process noise already absorbs it and the gain is about 0.2 m.
+- **JPDA still does not beat GNN once both have the IMM.** The mean GOSPA penalty of JPDA+IMM against GNN+IMM is +0.5 to +0.6 m with no clutter, +3.4 to +3.7 m at 20 returns per scan and +17 m at 60; identity switches are more frequent in 12 cells and fewer in none. It is the same result as before, now with the best manoeuvre handling I have.
+- **The IMM helps JPDA more often than not** (19 cells better, 7 worse), so some of JPDA's deficit in the earlier studies was missing manoeuvre handling, but not the part that matters here: the extra false tracks in clutter.
+
 ## Limits
 
-Simulated, two targets, Pd 0.9, a known clutter density and Pd, 15 to 40 seeds per cell without confidence intervals, single-EKF tracks only. JPDA's exact enumeration is expensive: the heaviest clutter case took minutes per cell and fell back to independent PDA on up to 0.1 scans per run (the cap is 5,000 events per cluster). The later scenarios add Pd 0.7 and merged returns but still use known Pd and clutter density and two targets. Variants that address coalescence (for example JPDA*, or coupled-filter formulations), a tuned birth and confirmation rule for JPDA, and the IMM combination are not tried.
+Simulated, two targets, Pd 0.9, a known clutter density and Pd, 15 to 40 seeds per cell without confidence intervals, single-EKF tracks in the main studies (the IMM combination is studied above). JPDA's exact enumeration is expensive: the heaviest clutter case took minutes per cell and fell back to independent PDA on up to 0.1 scans per run (the cap is 5,000 events per cluster). The later scenarios add Pd 0.7 and merged returns but still use known Pd and clutter density and two targets. Variants that address coalescence (for example JPDA*, or coupled-filter formulations), and a tuned birth and confirmation rule for JPDA are not tried.

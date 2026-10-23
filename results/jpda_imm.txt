@@ -1,0 +1,223 @@
+Two targets crossing, one turning for 20 s from step 40; 25 m/s, 40 paired seeds, 100 scans
+Differences are second minus first; negative is better for GOSPA and ID switches.
+
+=== gentle turn, 0.04 rad/s (about 1 m/s^2 sideways, 46 degrees)
+
+Pd 0.9, clutter 0 returns/scan
+  angle  10 deg, closest   0 m | GOSPA GNN  17.7 GNN+IMM  17.7 JPDA  19.5 JPDA+IMM  18.2 | ID sw GNN 0.15 GNN+IMM 0.35 JPDA 0.40 JPDA+IMM 0.47
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -0.0 (0.6)   ID switches +0.20 (0.32)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -1.2 (1.9)   ID switches +0.07 (0.36)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +0.6 (0.5)   ID switches +0.12 (0.40)
+  angle  10 deg, closest  40 m | GOSPA GNN  17.8 GNN+IMM  17.7 JPDA  22.0 JPDA+IMM  18.2 | ID sw GNN 0.90 GNN+IMM 0.80 JPDA 0.68 JPDA+IMM 1.12
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -0.1 (0.6)   ID switches -0.10 (0.29)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -3.7 (2.7)   ID switches +0.45 (0.58)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +0.5 (0.5)   ID switches +0.33 (0.40)
+  angle  20 deg, closest   0 m | GOSPA GNN  17.7 GNN+IMM  17.5 JPDA  20.2 JPDA+IMM  17.8 | ID sw GNN 0.35 GNN+IMM 0.28 JPDA 0.47 JPDA+IMM 0.38
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -0.2 (0.6)   ID switches -0.07 (0.36)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -2.3 (2.6)   ID switches -0.10 (0.40)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +0.3 (0.4)   ID switches +0.10 (0.20)
+  angle  20 deg, closest  40 m | GOSPA GNN  17.8 GNN+IMM  17.6 JPDA  20.4 JPDA+IMM  18.5 | ID sw GNN 0.25 GNN+IMM 0.38 JPDA 0.53 JPDA+IMM 0.90
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -0.2 (0.6)   ID switches +0.12 (0.26)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -1.9 (2.5)   ID switches +0.38 (0.65)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +0.9 (0.9)   ID switches +0.53 (0.62)
+
+Pd 0.9, clutter 20 returns/scan
+  angle  10 deg, closest   0 m | GOSPA GNN  17.5 GNN+IMM  17.2 JPDA  22.0 JPDA+IMM  20.1 | ID sw GNN 0.38 GNN+IMM 0.33 JPDA 0.60 JPDA+IMM 0.65
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -0.3 (0.4)   ID switches -0.05 (0.12)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -1.9 (2.4)   ID switches +0.05 (0.43)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +2.9 (1.2)   ID switches +0.33 (0.28)
+  angle  10 deg, closest  40 m | GOSPA GNN  17.6 GNN+IMM  17.6 JPDA  23.8 JPDA+IMM  20.4 | ID sw GNN 0.57 GNN+IMM 0.82 JPDA 0.60 JPDA+IMM 0.95
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   +0.0 (0.7)   ID switches +0.25 (0.30)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -3.4 (2.9)   ID switches +0.35 (0.37)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +2.8 (1.5)   ID switches +0.12 (0.26)
+  angle  20 deg, closest   0 m | GOSPA GNN  17.5 GNN+IMM  17.3 JPDA  22.1 JPDA+IMM  20.6 | ID sw GNN 0.17 GNN+IMM 0.33 JPDA 0.35 JPDA+IMM 0.35
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -0.2 (0.4)   ID switches +0.15 (0.23)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -1.5 (2.8)   ID switches +0.00 (0.19)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +3.2 (1.6)   ID switches +0.03 (0.27)
+  angle  20 deg, closest  40 m | GOSPA GNN  17.5 GNN+IMM  17.4 JPDA  21.8 JPDA+IMM  20.5 | ID sw GNN 0.17 GNN+IMM 0.38 JPDA 0.30 JPDA+IMM 0.70
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -0.2 (0.4)   ID switches +0.20 (0.51)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -1.3 (2.5)   ID switches +0.40 (0.45)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +3.1 (1.4)   ID switches +0.33 (0.37)
+
+Pd 0.9, clutter 60 returns/scan
+  angle  10 deg, closest   0 m | GOSPA GNN  17.5 GNN+IMM  17.1 JPDA  26.3 JPDA+IMM  29.4 | ID sw GNN 0.15 GNN+IMM 0.15 JPDA 0.35 JPDA+IMM 0.30
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -0.4 (0.2)   ID switches +0.00 (0.28)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   +3.2 (3.5)   ID switches -0.05 (0.33)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA  +12.4 (4.3)   ID switches +0.15 (0.26)
+  angle  10 deg, closest  40 m | GOSPA GNN  17.5 GNN+IMM  17.1 JPDA  27.3 JPDA+IMM  30.5 | ID sw GNN 0.55 GNN+IMM 0.50 JPDA 0.45 JPDA+IMM 1.27
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -0.4 (0.2)   ID switches -0.05 (0.41)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   +3.3 (5.9)   ID switches +0.82 (0.72)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA  +13.4 (5.9)   ID switches +0.78 (0.76)
+  angle  20 deg, closest   0 m | GOSPA GNN  17.5 GNN+IMM  17.1 JPDA  27.1 JPDA+IMM  29.9 | ID sw GNN 0.20 GNN+IMM 0.15 JPDA 0.45 JPDA+IMM 0.35
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -0.4 (0.2)   ID switches -0.05 (0.17)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   +2.8 (3.5)   ID switches -0.10 (0.39)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA  +12.9 (4.3)   ID switches +0.20 (0.23)
+  angle  20 deg, closest  40 m | GOSPA GNN  17.6 GNN+IMM  17.1 JPDA  26.6 JPDA+IMM  31.6 | ID sw GNN 0.35 GNN+IMM 0.35 JPDA 0.45 JPDA+IMM 0.50
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -0.4 (0.2)   ID switches +0.00 (0.14)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   +5.0 (5.4)   ID switches +0.05 (0.55)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA  +14.4 (5.8)   ID switches +0.15 (0.35)
+
+Pd 0.7, clutter 0 returns/scan
+  angle  10 deg, closest   0 m | GOSPA GNN  20.7 GNN+IMM  20.3 JPDA  23.4 JPDA+IMM  21.0 | ID sw GNN 0.45 GNN+IMM 0.42 JPDA 0.78 JPDA+IMM 0.85
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -0.4 (0.6)   ID switches -0.03 (0.26)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -2.4 (2.2)   ID switches +0.07 (0.49)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +0.7 (0.4)   ID switches +0.42 (0.43)
+  angle  10 deg, closest  40 m | GOSPA GNN  20.7 GNN+IMM  20.4 JPDA  25.1 JPDA+IMM  21.0 | ID sw GNN 0.85 GNN+IMM 0.97 JPDA 0.82 JPDA+IMM 1.35
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -0.3 (0.7)   ID switches +0.12 (0.27)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -4.1 (2.7)   ID switches +0.53 (0.67)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +0.6 (0.4)   ID switches +0.38 (0.43)
+  angle  20 deg, closest   0 m | GOSPA GNN  20.7 GNN+IMM  20.3 JPDA  23.3 JPDA+IMM  21.1 | ID sw GNN 0.60 GNN+IMM 0.53 JPDA 0.70 JPDA+IMM 0.70
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -0.4 (0.7)   ID switches -0.07 (0.24)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -2.2 (2.6)   ID switches +0.00 (0.44)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +0.8 (0.6)   ID switches +0.17 (0.33)
+  angle  20 deg, closest  40 m | GOSPA GNN  20.7 GNN+IMM  20.8 JPDA  23.6 JPDA+IMM  21.0 | ID sw GNN 0.50 GNN+IMM 0.55 JPDA 0.78 JPDA+IMM 0.82
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   +0.1 (1.1)   ID switches +0.05 (0.22)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -2.6 (2.4)   ID switches +0.05 (0.65)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +0.3 (1.0)   ID switches +0.28 (0.43)
+
+Pd 0.7, clutter 20 returns/scan
+  angle  10 deg, closest   0 m | GOSPA GNN  20.9 GNN+IMM  20.4 JPDA  26.3 JPDA+IMM  25.0 | ID sw GNN 0.47 GNN+IMM 0.42 JPDA 0.78 JPDA+IMM 0.78
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -0.5 (1.0)   ID switches -0.05 (0.10)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -1.3 (2.2)   ID switches +0.00 (0.36)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +4.6 (1.8)   ID switches +0.35 (0.28)
+  angle  10 deg, closest  40 m | GOSPA GNN  21.2 GNN+IMM  20.6 JPDA  28.7 JPDA+IMM  24.7 | ID sw GNN 0.70 GNN+IMM 0.93 JPDA 1.02 JPDA+IMM 1.43
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -0.5 (0.6)   ID switches +0.23 (0.38)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -4.0 (3.4)   ID switches +0.40 (0.59)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +4.1 (1.4)   ID switches +0.50 (0.54)
+  angle  20 deg, closest   0 m | GOSPA GNN  20.5 GNN+IMM  20.4 JPDA  25.9 JPDA+IMM  25.1 | ID sw GNN 0.38 GNN+IMM 0.42 JPDA 0.53 JPDA+IMM 0.70
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -0.1 (0.4)   ID switches +0.05 (0.23)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -0.9 (2.7)   ID switches +0.17 (0.43)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +4.7 (1.8)   ID switches +0.28 (0.27)
+  angle  20 deg, closest  40 m | GOSPA GNN  20.6 GNN+IMM  20.4 JPDA  26.8 JPDA+IMM  24.5 | ID sw GNN 0.53 GNN+IMM 0.47 JPDA 0.78 JPDA+IMM 0.93
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -0.1 (0.4)   ID switches -0.05 (0.27)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -2.3 (2.3)   ID switches +0.15 (0.42)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +4.1 (1.8)   ID switches +0.45 (0.41)
+
+Pd 0.7, clutter 60 returns/scan
+  angle  10 deg, closest   0 m | GOSPA GNN  20.9 GNN+IMM  20.7 JPDA  34.4 JPDA+IMM  40.4 | ID sw GNN 0.25 GNN+IMM 0.25 JPDA 0.72 JPDA+IMM 0.75
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -0.2 (0.3)   ID switches +0.00 (0.24)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   +6.0 (5.2)   ID switches +0.03 (0.44)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA  +19.6 (7.4)   ID switches +0.50 (0.50)
+  angle  10 deg, closest  40 m | GOSPA GNN  21.2 GNN+IMM  21.0 JPDA  35.0 JPDA+IMM  40.0 | ID sw GNN 0.75 GNN+IMM 0.65 JPDA 1.15 JPDA+IMM 1.48
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -0.2 (0.3)   ID switches -0.10 (0.37)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   +5.0 (7.4)   ID switches +0.33 (0.39)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA  +19.0 (7.4)   ID switches +0.82 (0.52)
+  angle  20 deg, closest   0 m | GOSPA GNN  21.0 GNN+IMM  20.7 JPDA  33.2 JPDA+IMM  41.0 | ID sw GNN 0.07 GNN+IMM 0.05 JPDA 0.80 JPDA+IMM 0.45
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -0.3 (0.4)   ID switches -0.03 (0.05)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   +7.9 (6.9)   ID switches -0.35 (0.50)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA  +20.3 (7.5)   ID switches +0.40 (0.40)
+  angle  20 deg, closest  40 m | GOSPA GNN  21.1 GNN+IMM  20.9 JPDA  36.2 JPDA+IMM  44.0 | ID sw GNN 0.55 GNN+IMM 0.40 JPDA 0.93 JPDA+IMM 1.05
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -0.1 (0.3)   ID switches -0.15 (0.41)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   +7.8 (6.4)   ID switches +0.12 (0.49)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA  +23.1 (8.8)   ID switches +0.65 (0.47)
+
+=== hard turn, 0.10 rad/s (about 2.5 m/s^2 sideways, 115 degrees)
+
+Pd 0.9, clutter 0 returns/scan
+  angle  10 deg, closest   0 m | GOSPA GNN  19.0 GNN+IMM  17.4 JPDA  20.2 JPDA+IMM  18.0 | ID sw GNN 0.25 GNN+IMM 0.20 JPDA 0.42 JPDA+IMM 0.53
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -1.5 (0.9)   ID switches -0.05 (0.16)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -2.3 (1.3)   ID switches +0.10 (0.30)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +0.5 (0.5)   ID switches +0.33 (0.39)
+  angle  10 deg, closest  40 m | GOSPA GNN  19.0 GNN+IMM  17.4 JPDA  21.5 JPDA+IMM  17.9 | ID sw GNN 0.65 GNN+IMM 0.55 JPDA 0.72 JPDA+IMM 0.78
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -1.5 (1.0)   ID switches -0.10 (0.23)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -3.6 (1.5)   ID switches +0.05 (0.36)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +0.5 (0.5)   ID switches +0.23 (0.35)
+  angle  20 deg, closest   0 m | GOSPA GNN  18.9 GNN+IMM  17.3 JPDA  19.4 JPDA+IMM  17.6 | ID sw GNN 0.38 GNN+IMM 0.07 JPDA 0.42 JPDA+IMM 0.23
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -1.6 (0.9)   ID switches -0.30 (0.32)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -1.7 (1.0)   ID switches -0.20 (0.38)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +0.3 (0.4)   ID switches +0.15 (0.22)
+  angle  20 deg, closest  40 m | GOSPA GNN  18.9 GNN+IMM  17.4 JPDA  20.2 JPDA+IMM  17.7 | ID sw GNN 0.17 GNN+IMM 0.12 JPDA 0.60 JPDA+IMM 0.38
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -1.5 (0.9)   ID switches -0.05 (0.14)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -2.5 (1.2)   ID switches -0.23 (0.32)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +0.4 (0.5)   ID switches +0.25 (0.25)
+
+Pd 0.9, clutter 20 returns/scan
+  angle  10 deg, closest   0 m | GOSPA GNN  18.9 GNN+IMM  17.0 JPDA  22.6 JPDA+IMM  19.9 | ID sw GNN 0.50 GNN+IMM 0.40 JPDA 0.68 JPDA+IMM 0.50
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -1.9 (0.9)   ID switches -0.10 (0.15)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -2.7 (1.6)   ID switches -0.17 (0.30)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +2.8 (1.5)   ID switches +0.10 (0.21)
+  angle  10 deg, closest  40 m | GOSPA GNN  18.8 GNN+IMM  17.1 JPDA  23.1 JPDA+IMM  19.7 | ID sw GNN 0.42 GNN+IMM 0.40 JPDA 0.75 JPDA+IMM 0.65
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -1.8 (0.7)   ID switches -0.03 (0.29)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -3.4 (2.1)   ID switches -0.10 (0.38)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +2.7 (1.3)   ID switches +0.25 (0.26)
+  angle  20 deg, closest   0 m | GOSPA GNN  18.9 GNN+IMM  17.2 JPDA  21.4 JPDA+IMM  20.1 | ID sw GNN 0.20 GNN+IMM 0.15 JPDA 0.35 JPDA+IMM 0.15
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -1.8 (0.7)   ID switches -0.05 (0.17)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -1.3 (1.6)   ID switches -0.20 (0.21)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +3.0 (1.7)   ID switches +0.00 (0.25)
+  angle  20 deg, closest  40 m | GOSPA GNN  18.8 GNN+IMM  17.1 JPDA  21.7 JPDA+IMM  20.4 | ID sw GNN 0.23 GNN+IMM 0.05 JPDA 0.50 JPDA+IMM 0.20
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -1.7 (0.7)   ID switches -0.17 (0.18)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -1.3 (1.3)   ID switches -0.30 (0.27)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +3.3 (1.8)   ID switches +0.15 (0.18)
+
+Pd 0.9, clutter 60 returns/scan
+  angle  10 deg, closest   0 m | GOSPA GNN  19.4 GNN+IMM  16.8 JPDA  27.5 JPDA+IMM  28.0 | ID sw GNN 0.47 GNN+IMM 0.25 JPDA 0.53 JPDA+IMM 0.30
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -2.6 (0.9)   ID switches -0.23 (0.40)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   +0.5 (3.4)   ID switches -0.23 (0.45)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA  +11.2 (4.5)   ID switches +0.05 (0.22)
+  angle  10 deg, closest  40 m | GOSPA GNN  19.4 GNN+IMM  16.8 JPDA  26.2 JPDA+IMM  28.7 | ID sw GNN 0.47 GNN+IMM 0.35 JPDA 0.50 JPDA+IMM 0.78
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -2.6 (0.9)   ID switches -0.12 (0.29)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   +2.5 (4.9)   ID switches +0.28 (0.39)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA  +11.9 (5.6)   ID switches +0.42 (0.40)
+  angle  20 deg, closest   0 m | GOSPA GNN  19.2 GNN+IMM  16.8 JPDA  26.1 JPDA+IMM  29.6 | ID sw GNN 0.20 GNN+IMM 0.00 JPDA 0.35 JPDA+IMM 0.30
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -2.4 (0.7)   ID switches -0.20 (0.13)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   +3.5 (3.2)   ID switches -0.05 (0.45)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA  +12.7 (4.6)   ID switches +0.30 (0.43)
+  angle  20 deg, closest  40 m | GOSPA GNN  19.4 GNN+IMM  16.8 JPDA  25.4 JPDA+IMM  29.9 | ID sw GNN 0.30 GNN+IMM 0.05 JPDA 0.40 JPDA+IMM 0.15
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -2.6 (0.8)   ID switches -0.25 (0.15)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   +4.5 (4.9)   ID switches -0.25 (0.32)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA  +13.0 (5.6)   ID switches +0.10 (0.14)
+
+Pd 0.7, clutter 0 returns/scan
+  angle  10 deg, closest   0 m | GOSPA GNN  22.7 GNN+IMM  20.1 JPDA  24.1 JPDA+IMM  20.8 | ID sw GNN 0.82 GNN+IMM 0.53 JPDA 0.85 JPDA+IMM 0.90
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -2.6 (0.9)   ID switches -0.30 (0.35)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -3.3 (1.6)   ID switches +0.05 (0.51)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +0.8 (0.6)   ID switches +0.38 (0.44)
+  angle  10 deg, closest  40 m | GOSPA GNN  22.6 GNN+IMM  20.1 JPDA  24.6 JPDA+IMM  21.0 | ID sw GNN 0.85 GNN+IMM 0.68 JPDA 0.97 JPDA+IMM 1.00
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -2.5 (0.9)   ID switches -0.17 (0.37)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -3.5 (1.9)   ID switches +0.03 (0.47)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +0.9 (1.0)   ID switches +0.33 (0.45)
+  angle  20 deg, closest   0 m | GOSPA GNN  22.8 GNN+IMM  20.1 JPDA  22.8 JPDA+IMM  20.6 | ID sw GNN 0.75 GNN+IMM 0.42 JPDA 0.82 JPDA+IMM 0.47
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -2.7 (1.0)   ID switches -0.33 (0.20)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -2.2 (1.1)   ID switches -0.35 (0.33)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +0.5 (0.5)   ID switches +0.05 (0.29)
+  angle  20 deg, closest  40 m | GOSPA GNN  23.2 GNN+IMM  20.1 JPDA  22.9 JPDA+IMM  20.5 | ID sw GNN 0.75 GNN+IMM 0.17 JPDA 0.72 JPDA+IMM 0.40
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -3.2 (1.4)   ID switches -0.57 (0.44)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -2.3 (1.0)   ID switches -0.33 (0.31)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +0.4 (0.3)   ID switches +0.23 (0.24)
+
+Pd 0.7, clutter 20 returns/scan
+  angle  10 deg, closest   0 m | GOSPA GNN  22.4 GNN+IMM  20.6 JPDA  27.0 JPDA+IMM  24.6 | ID sw GNN 0.75 GNN+IMM 0.75 JPDA 1.05 JPDA+IMM 0.97
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -1.8 (0.7)   ID switches +0.00 (0.35)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -2.4 (1.9)   ID switches -0.07 (0.48)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +4.0 (1.6)   ID switches +0.23 (0.52)
+  angle  10 deg, closest  40 m | GOSPA GNN  22.7 GNN+IMM  21.1 JPDA  28.2 JPDA+IMM  24.4 | ID sw GNN 0.65 GNN+IMM 0.80 JPDA 0.97 JPDA+IMM 1.18
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -1.6 (1.1)   ID switches +0.15 (0.54)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -3.8 (2.4)   ID switches +0.20 (0.48)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +3.3 (1.4)   ID switches +0.38 (0.35)
+  angle  20 deg, closest   0 m | GOSPA GNN  22.2 GNN+IMM  20.3 JPDA  25.6 JPDA+IMM  24.4 | ID sw GNN 0.40 GNN+IMM 0.35 JPDA 0.42 JPDA+IMM 0.40
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -1.9 (0.7)   ID switches -0.05 (0.25)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -1.2 (1.5)   ID switches -0.03 (0.28)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +4.2 (1.7)   ID switches +0.05 (0.10)
+  angle  20 deg, closest  40 m | GOSPA GNN  22.5 GNN+IMM  20.8 JPDA  27.0 JPDA+IMM  24.5 | ID sw GNN 0.65 GNN+IMM 0.42 JPDA 0.80 JPDA+IMM 0.68
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -1.7 (1.0)   ID switches -0.23 (0.37)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   -2.5 (2.1)   ID switches -0.12 (0.56)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA   +3.7 (1.5)   ID switches +0.25 (0.21)
+
+Pd 0.7, clutter 60 returns/scan
+  angle  10 deg, closest   0 m | GOSPA GNN  22.7 GNN+IMM  20.5 JPDA  35.0 JPDA+IMM  44.8 | ID sw GNN 0.50 GNN+IMM 0.28 JPDA 0.85 JPDA+IMM 0.78
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -2.3 (0.7)   ID switches -0.23 (0.26)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   +9.8 (5.1)   ID switches -0.07 (0.26)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA  +24.3 (7.5)   ID switches +0.50 (0.42)
+  angle  10 deg, closest  40 m | GOSPA GNN  23.3 GNN+IMM  20.9 JPDA  35.5 JPDA+IMM  42.8 | ID sw GNN 0.80 GNN+IMM 0.35 JPDA 1.10 JPDA+IMM 1.15
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -2.4 (0.7)   ID switches -0.45 (0.27)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   +7.3 (6.7)   ID switches +0.05 (0.44)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA  +21.9 (7.9)   ID switches +0.80 (0.49)
+  angle  20 deg, closest   0 m | GOSPA GNN  23.1 GNN+IMM  20.6 JPDA  34.7 JPDA+IMM  41.7 | ID sw GNN 0.38 GNN+IMM 0.10 JPDA 0.62 JPDA+IMM 0.47
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -2.5 (0.7)   ID switches -0.28 (0.20)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   +7.0 (6.9)   ID switches -0.15 (0.37)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA  +21.1 (8.1)   ID switches +0.38 (0.43)
+  angle  20 deg, closest  40 m | GOSPA GNN  22.8 GNN+IMM  20.7 JPDA  36.3 JPDA+IMM  41.4 | ID sw GNN 0.55 GNN+IMM 0.15 JPDA 0.70 JPDA+IMM 0.42
+      IMM under GNN (GNN -> GNN+IMM)         GOSPA   -2.2 (0.7)   ID switches -0.40 (0.37)
+      IMM under JPDA (JPDA -> JPDA+IMM)      GOSPA   +5.1 (5.9)   ID switches -0.28 (0.23)
+      JPDA given IMM (GNN+IMM -> JPDA+IMM)   GOSPA  +20.7 (8.6)   ID switches +0.28 (0.31)
+

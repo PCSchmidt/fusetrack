@@ -180,10 +180,6 @@ pub struct GnnTracker {
 
 impl GnnTracker {
     pub fn new(cfg: TrackerConfig) -> Self {
-        assert!(
-            cfg.jpda.is_none() || cfg.imm.is_none(),
-            "JPDA is implemented for single-EKF tracks; combine it with the IMM in a later milestone"
-        );
         Self {
             cfg,
             tracks: Vec::new(),
@@ -336,10 +332,22 @@ impl GnnTracker {
                 }
             }
             if !pairs.is_empty() {
-                let TrackFilter::Single(ekf) = &mut t.filter else {
-                    unreachable!("JPDA requires single-EKF tracks")
-                };
-                jpda::pda_update(ekf, radar, &pairs, marg.miss[i]);
+                match &mut t.filter {
+                    TrackFilter::Single(ekf) => jpda::pda_update(ekf, radar, &pairs, marg.miss[i]),
+                    TrackFilter::Multi(imm) => {
+                        let list: Vec<(f64, RadarMeas, f64)> = innovations[i]
+                            .iter()
+                            .enumerate()
+                            .filter(|(_, inn)| inn.is_some())
+                            .map(|(j, _)| {
+                                let lambda = jp.clutter_density.max(JPDA_MIN_DENSITY)
+                                    * meas[j].range.max(1.0);
+                                (marg.beta[i][j], meas[j], lambda)
+                            })
+                            .collect();
+                        imm.pda_update(radar, &list, marg.miss[i], jp.pd);
+                    }
+                }
             }
             if scoring {
                 // PDA track likelihood ratio: a miss plus every gated measurement as a possible detection

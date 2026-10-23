@@ -241,6 +241,53 @@ pub fn simulate_crossing_angle<R: Rng + ?Sized>(
     scans_from_trajectories(cfg, &trajectories, rng)
 }
 
+/// Scans (missed detections and clutter included) from given truth trajectories, each `steps + 1` states long
+/// including its start state.
+pub fn simulate_from_trajectories<R: Rng + ?Sized>(
+    cfg: &ScenarioConfig,
+    trajectories: &[Vec<State>],
+    rng: &mut R,
+) -> Vec<Scan> {
+    scans_from_trajectories(cfg, trajectories, rng)
+}
+
+/// Two targets crossing at a shallow angle (see [`simulate_crossing_angle`]) where target B turns at `omega` rad/s
+/// for `turn_steps` steps starting `turn_start` steps into the run, then flies straight on its new heading. A is
+/// straight throughout. The turn happens around the time the two are closest, which is where a track needs a
+/// manoeuvre model and an association rule at once.
+#[allow(clippy::too_many_arguments)]
+pub fn simulate_crossing_turn<R: Rng + ?Sized>(
+    cfg: &ScenarioConfig,
+    angle_deg: f64,
+    miss_distance: f64,
+    speed: f64,
+    omega: f64,
+    turn_start: usize,
+    turn_steps: usize,
+    rng: &mut R,
+) -> Vec<Scan> {
+    let t_cross = cfg.steps as f64 * cfg.dt / 2.0;
+    let crossing = cfg.radar.pos + nalgebra::Vector2::new(5000.0, 0.0);
+    let (s, c) = (angle_deg.to_radians() / 2.0).sin_cos();
+    let va = nalgebra::Vector2::new(speed * c, speed * s);
+    let vb = nalgebra::Vector2::new(speed * c, -speed * s);
+    let delta = nalgebra::Vector2::new(miss_distance, 0.0);
+    let a0 = crossing - va * t_cross;
+    let b0 = crossing + delta - vb * t_cross;
+    let xa = State::new(a0[0], a0[1], va[0], va[1]);
+    let xb = State::new(b0[0], b0[1], vb[0], vb[1]);
+    let ta = simulate_trajectory(xa, cfg.dt, cfg.steps, cfg.sigma_accel, rng);
+    let after = cfg.steps.saturating_sub(turn_start + turn_steps);
+    let (tb, _) = simulate_maneuvering(
+        xb,
+        cfg.dt,
+        &[(0.0, turn_start), (omega, turn_steps), (0.0, after)],
+        cfg.sigma_accel,
+        rng,
+    );
+    scans_from_trajectories(cfg, &[ta, tb], rng)
+}
+
 /// Two targets flying side by side: same velocity, `separation` metres apart across the line of sight.
 ///
 /// They start 6 km from the radar on the +x axis, offset by +/- `separation / 2` in y, and fly toward the

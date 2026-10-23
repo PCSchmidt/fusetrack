@@ -8,7 +8,7 @@ use std::f64::consts::TAU;
 
 use nalgebra::Matrix4;
 
-use crate::ekf::Ekf;
+use crate::ekf::{Ekf, Innovation};
 use crate::models::{Radar, RadarMeas, State};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -149,6 +149,52 @@ impl Imm {
             }
         }
         self.mu = w.iter().map(|x| x / total).collect();
+        true
+    }
+
+    /// PDA update for JPDA: `meas[j] = (beta_j, z_j, lambda_j)` where `beta_j` is the probability that measurement
+    /// `j` is this track's (from the joint association) and `lambda_j` its clutter density in measurement space;
+    /// `miss` is the probability that none is, and `pd` the detection probability.
+    ///
+    /// Every model is updated with its own innovations and the shared association probabilities, and each model's
+    /// probability is reweighted by its PDA likelihood of the whole set, `(1 - pd) + sum_j pd N_mj / lambda_j`.
+    /// This reuses the combined-estimate association weights computed by the tracker (an approximation: a
+    /// mixture over the models would be more exact). Returns `false` and changes nothing if no model has a
+    /// usable innovation.
+    pub fn pda_update(
+        &mut self,
+        radar: &Radar,
+        meas: &[(f64, RadarMeas, f64)],
+        miss: f64,
+        pd: f64,
+    ) -> bool {
+        let r = self.filters.len();
+        let mut pairs: Vec<Vec<(f64, Innovation)>> = Vec::with_capacity(r);
+        let mut like = vec![1.0 - pd; r];
+        for (m, f) in self.filters.iter().enumerate() {
+            let mut p = Vec::new();
+            for (beta, z, lambda) in meas {
+                if let Some(inn) = f.innovation(z, radar) {
+                    let n = (-0.5 * inn.nis()).exp() / (TAU * inn.s.determinant().sqrt());
+                    like[m] += pd * n / lambda;
+                    p.push((*beta, inn));
+                }
+            }
+            pairs.push(p);
+        }
+        if pairs.iter().all(|p| p.is_empty()) {
+            return false;
+        }
+        for (f, p) in self.filters.iter_mut().zip(&pairs) {
+            if !p.is_empty() {
+                crate::jpda::pda_update(f, radar, p, miss);
+            }
+        }
+        let w: Vec<f64> = self.mu.iter().zip(&like).map(|(m, l)| m * l).collect();
+        let total: f64 = w.iter().sum();
+        if total.is_finite() && total > 0.0 {
+            self.mu = w.iter().map(|x| x / total).collect();
+        }
         true
     }
 

@@ -76,16 +76,143 @@ fn uncertainty_about_which_measurement_is_real_inflates_the_covariance() {
     assert!((split.x - a.x).norm() < 1e-6, "{}", (split.x - a.x).norm());
 }
 
+fn imm_at(x: State) -> fusetrack::imm::Imm {
+    use fusetrack::imm::{Imm, ImmConfig};
+    let p = Matrix4::from_diagonal(&nalgebra::Vector4::new(400.0, 400.0, 25.0, 25.0));
+    Imm::new(
+        ImmConfig::cv_ct(0.10, 0.5, 0.5, 0.9),
+        x,
+        p,
+        vec![0.8, 0.1, 0.1],
+    )
+}
+
 #[test]
-#[should_panic(expected = "single-EKF")]
-fn jpda_with_an_imm_is_refused() {
+fn imm_pda_with_one_certain_measurement_equals_the_plain_imm_update() {
+    let r = radar();
+    let x = State::new(4000.0, 1500.0, 20.0, -10.0);
+    let mut plain = imm_at(x);
+    let mut pda = plain.clone();
+    plain.predict(1.0);
+    pda.predict(1.0);
+    let z = RadarMeas {
+        range: r.h(&x).range + 12.0,
+        bearing: r.h(&x).bearing + 0.002,
+    };
+    assert!(plain.update(&z, &r));
+    assert!(pda.pda_update(&r, &[(1.0, z, 1.0e-6)], 0.0, 1.0));
+    assert!((plain.estimate().0 - pda.estimate().0).norm() < 1e-9);
+    assert!(plain
+        .mu
+        .iter()
+        .zip(&pda.mu)
+        .all(|(a, b)| (a - b).abs() < 1e-9));
+}
+
+#[test]
+fn imm_pda_with_no_measurement_changes_nothing() {
+    let x = State::new(4000.0, 1500.0, 20.0, -10.0);
+    let mut imm = imm_at(x);
+    imm.predict(1.0);
+    let before = (imm.estimate().0, imm.mu.clone());
+    assert!(!imm.pda_update(&radar(), &[], 1.0, 0.9));
+    assert_eq!(before.0, imm.estimate().0);
+    assert_eq!(before.1, imm.mu);
+}
+
+#[test]
+fn imm_pda_shifts_probability_to_the_model_that_explains_a_turn() {
+    // a target turning at 0.10 rad/s: after some scans of noise-free measurements, the turning model should dominate
+    use fusetrack::ekf::Ekf;
+    let r = radar();
+    let mut truth = State::new(4000.0, 1500.0, 25.0, 0.0);
+    let mut imm = imm_at(truth);
+    let f = Ekf::ct_transition(0.10, 1.0);
+    for _ in 0..25 {
+        truth = f * truth;
+        imm.predict(1.0);
+        let h = r.h(&truth);
+        assert!(imm.pda_update(
+            &r,
+            &[(
+                1.0,
+                RadarMeas {
+                    range: h.range,
+                    bearing: h.bearing
+                },
+                1.0e-6
+            )],
+            0.0,
+            0.9
+        ));
+    }
+    let turn_mass: f64 = imm.mu[1] + imm.mu[2];
+    assert!(turn_mass > 0.8, "mu = {:?}", imm.mu);
+    assert!((imm.estimate().0 - truth).norm() < 15.0);
+}
+
+#[test]
+fn jpda_with_an_imm_tracks_a_manoeuvring_target_in_clutter() {
     use fusetrack::imm::ImmConfig;
-    let imm = ImmConfig::cv_ct(0.05, 1.0, 1.0, 0.9);
-    let _ = GnnTracker::new(TrackerConfig {
-        imm: Some(imm),
-        jpda: Some(JpdaConfig::new(0.9, 1e-7)),
-        ..TrackerConfig::default()
+    use fusetrack::sim::simulate_maneuvering;
+    let r_max = 15000.0;
+    let clutter_rate = 20.0;
+    let density = clutter_rate / (std::f64::consts::PI * r_max * r_max);
+    let cfg = ScenarioConfig {
+        radar: radar(),
+        dt: 1.0,
+        steps: 100,
+        n_targets: 1,
+        sigma_accel: 0.5,
+        pd: 0.9,
+        clutter_rate,
+        r_max,
+    };
+    let score = Some(ScoreConfig {
+        pd: 0.9,
+        clutter_density: density,
+        confirm: 12.0,
+        delete: -5.0,
     });
+    let tcfg = TrackerConfig {
+        imm: Some(ImmConfig::cv_ct(0.10, 0.5, 0.5, 0.9)),
+        score,
+        jpda: Some(JpdaConfig::new(0.9, density)),
+        ..TrackerConfig::default()
+    };
+    let mut near = 0usize;
+    let mut scored = 0usize;
+    for seed in 0..10u64 {
+        let mut rng = StdRng::seed_from_u64(seed);
+        let (states, _) = simulate_maneuvering(
+            State::new(4000.0, 1500.0, 25.0, 0.0),
+            1.0,
+            &[(0.0, 30), (0.08, 30), (0.0, 40)],
+            0.5,
+            &mut rng,
+        );
+        let scans = fusetrack::sim::simulate_from_trajectories(&cfg, &[states], &mut rng);
+        let mut tracker = GnnTracker::new(tcfg.clone());
+        for (k, scan) in scans.iter().enumerate() {
+            tracker.step(cfg.dt, &scan.meas, &cfg.radar);
+            if k < 25 {
+                continue;
+            }
+            scored += 1;
+            let t = Vector2::new(scan.truth[0][0], scan.truth[0][1]);
+            if tracker
+                .tracks
+                .iter()
+                .any(|tr| tr.status == TrackStatus::Confirmed && (tr.position() - t).norm() < 100.0)
+            {
+                near += 1;
+            }
+        }
+    }
+    assert!(
+        near as f64 / scored as f64 > 0.9,
+        "tracked {near} of {scored} scored scans"
+    );
 }
 
 /// Average NEES of the confirmed track nearest the single true target, in clutter.
