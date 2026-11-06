@@ -4,17 +4,17 @@
 
 Status: version 0.4, in progress, last changed 23 October 2026. Code: https://github.com/PCSchmidt/fusetrack (public, MIT licence, a permissive open-source licence). Everything runs on simulated data; no real sensor has been used.
 
-Imagine a radar screen showing a few dozen blips (dots, each one a detection). The radar sweeps round once a second or so, and each full rotation is a sweep. Some blips are aircraft, some are false echoes (random blips from noise, which the README calls clutter), and every blip is slightly off from where the object really is. A tracking system has to decide which blips belong to the same object from one sweep to the next, ignore the false ones, and say where each object is heading. FuseTrack is my attempt to build that machinery from the ground up and to measure how well each piece works. The README (the front-page text file of a repository) frames it as a start toward counter-UAS (counter-unmanned aircraft systems, meaning defensive systems that detect and follow small drones): tracking only, simulation only, with no weapons or targeting functions.
+Imagine a radar screen showing a few dozen blips (dots, each one a detection). The radar sweeps round once a second or so, and each full rotation is a sweep. Some blips are aircraft, some are false echoes (random blips from noise, which the README calls clutter), and every blip is slightly off from where the object really is. A tracking system has to decide which blips belong to the same object from one sweep to the next, ignore the false ones, and say where each object is heading. FuseTrack is an attempt to build that machinery from the ground up and to measure how well each piece works. I started it from a course interest, a job interest and the physical-AI portfolio family, but primarily the last. The README (the front-page text file of a repository) frames it as a start toward counter-UAS (counter-unmanned aircraft systems, meaning defensive systems that detect and follow small drones): tracking only, simulation only, with no weapons or targeting functions.
 
 The results are mixed.
 
 - **A failure and a fix.** A tracker that confirms a new track after "three hits in five sweeps" breaks down at 200 false echoes per sweep, and a likelihood-based rule (a score that rewards blips a real target would plausibly produce) fixes that. The fix was tuned on the same scenarios it is scored on, and it needs to be told how often targets are detected and how dense the false echoes are; a real system would have to estimate both.
 - **A helper that depends on a guess.** A filter that mixes several motion guesses (an IMM, described below) beats a plain filter on turning targets, though less when its guess about the turn rate is wrong.
-- **A negative result.** A more elaborate way of matching blips to objects (JPDA, described below) did not beat the simpler method in any scenario I tried, and was worse in clutter.
+- **A negative result.** A more elaborate way of matching blips to objects (JPDA, described below) did not beat the simpler method in any scenario tried, and was worse in clutter.
 
 What the numbers mean: the tracking error is scored in metres. A good run scores about 12 to 13 metres, close to the radar's own measurement error (about 15 metres in range). A tracker that reports nothing scores 200. So 156 m under heavy clutter is close to useless, and 12.6 m against 17 m on a turning target is a real but modest gain.
 
-The main caveat: the simulator generates its targets from the same motion rules the filters assume, which is the easy case. The numbers show how the methods compare with each other, not how they would do on real radar. AI coding agents wrote almost all of the code, and I directed the scope, plan, architecture and preferences.
+The main caveat: the simulator generates its targets from the same motion rules the filters assume, which is the easy case. The numbers show how the methods compare with each other, not how they would do on real radar. AI coding agents wrote almost all of the code.
 
 Two more facts about the setup. There is no machine-learning model in this project (a model being software that learned patterns from examples); the README lists a learned association model as a planned later step, and that part does not exist. And the tracking programs follow fixed rules, so the same input gives the same output; the randomness comes from the simulator, which uses a "seed" (a starting number that makes the same random sequence come out every time) so each experiment can be repeated exactly. Results are averages over many seeded runs, so they carry some chance variation.
 
@@ -34,7 +34,7 @@ If you have ten minutes, read this opening, then the chapters on how it works, t
 
 ## What problem this solves
 
-Fielded systems that watch for small drones combine reports from several kinds of sensor: radar, cameras (EO/IR, electro-optical and infrared) and radio-frequency (RF) detectors. Each report is noisy and arrives at its own time. The README names the hard parts: measurements that relate to position in a curved, nonlinear way, targets that turn or speed up, false echoes, and the question of which measurement belongs to which target. This project builds that stack myself rather than calling a ready-made library, and measures it.
+Fielded systems that watch for small drones combine reports from several kinds of sensor: radar, cameras (EO/IR, electro-optical and infrared) and radio-frequency (RF) detectors. Each report is noisy and arrives at its own time. The README names the hard parts: measurements that relate to position in a curved, nonlinear way, targets that turn or speed up, false echoes, and the question of which measurement belongs to which target. This project builds that stack from scratch rather than calling a ready-made library, and measures it.
 
 A concrete case: two targets fly toward each other and cross. For a few sweeps their blips are close together, and the tracker must decide which blip continues which path. If it swaps them, the track picture says target A is now flying along target B's path. This "identity switch" is one of the things the project counts; fewer is better.
 
@@ -62,7 +62,7 @@ The code is about 2,900 lines of Rust in the source folder, plus about 580 lines
 
 The data is simulated. Targets fly at a steady velocity with small random speed-ups, slow-downs and sideways pushes. The radar adds bell-curve (Gaussian) noise of 15 metres in range and about 0.17 degrees in bearing, which is also roughly 15 metres sideways at 5 kilometres. Clutter is a random number of false echoes spread evenly over the disc. Nothing is downloaded and nothing is private.
 
-The tools are few. Rust is a systems programming language. The nalgebra library supplies the matrix arithmetic, and two random-number libraries supply the seeded noise.
+The tools are few. Rust is a systems programming language; I picked it because it is growing in popularity and utility (the repository gives no reason of its own). The nalgebra library supplies the matrix arithmetic, and two random-number libraries supply the seeded noise.
 
 The weakest link is the gap between the simulator and the world (the caveat in the opening): a good score shows that the code does what the textbook says, not that the approach copes with real targets, sensors and clutter.
 
@@ -155,7 +155,7 @@ The numbers in the previous chapter are the results; the limits on what they sup
 
 ## Could it be put into real use?
 
-No. On the scale of experiment, works on a laptop, deployable and operated, FuseTrack sits at works on a laptop: it builds, passes its tests and runs its experiments, but nothing is hosted, there is no real data and no user other than me is known. It has no stars, no copies made by others and no outside users that I can show. It is a library with example programs, not a service. A real deployment would need real sensor feeds, handling of late and missing data, more sensor types, timing measurements on target hardware and a security review, none of which exists. Two steps would help most: a replay of recorded radar data to see which simulated findings survive, and confidence intervals on the earlier tables with thresholds fixed before testing. As a showcase it rates "possible": it shows measured comparisons and a negative result written up in the repository, but it is not a deployable product.
+No. On the scale of experiment, works on a laptop, deployable and operated, FuseTrack sits at works on a laptop: it builds, passes its tests and runs its experiments, but nothing is hosted, there is no real data and nobody else has run, read or commented on it, as far as I know. It has no stars and no copies made by others. It is a library with example programs, not a service. A real deployment would need real sensor feeds, handling of late and missing data, more sensor types, timing measurements on target hardware and a security review, none of which exists. Two steps would help most: a replay of recorded radar data to see which simulated findings survive (I know of no recorded radar or public tracking data to use; I will have to find some, and I think model or agent help is needed for the search), and confidence intervals on the earlier tables with thresholds fixed before testing. As a showcase it rates "possible": it shows measured comparisons and a negative result written up in the repository, but it is not a deployable product.
 
 ## Strengths, shortcomings and the work still to do
 
@@ -163,15 +163,15 @@ The roadmap says each milestone ends with a measured result, and the README repo
 
 Three shortcomings matter most. First, no real radar data: everything is simulated from the filters' own assumptions (see the opening). Second, the clutter fix was tuned on the scenarios it was scored on, and it needs known detection and clutter rates. Third, the main tables carry no confidence intervals. Smaller items: the IMM uses fixed turn rates and its cost is not benchmarked, the IMM is not combined with the likelihood-score rule at heavy clutter, and JPDA works with single-filter tracks in most studies. The README's own list adds: one sensor, targets present for the whole scenario, and clutter that is evenly spread and independent between sweeps.
 
-Of the roadmap, milestones 0.1 to 0.4 are done (0.4 as a measured negative result). Milestones 0.5 to 0.7 are planned: camera and RF bearing-only sensors with timing differences, a learned association model compared against the classical ones, and Cursor-on-Target output with Python bindings. The completeness picture is a finished single-radar classical stack and none of the multi-sensor or learned parts.
+I do not consider the project finished, and time is not a concern. I defer to a recommendation on whether to back the first four README tables with saved output files and intervals before further milestones. Of the roadmap, milestones 0.1 to 0.4 are done (0.4 as a measured negative result). Milestones 0.5 to 0.7 are planned, and I have not chosen which to do or in what order: camera and RF bearing-only sensors with timing differences, a learned association model compared against the classical ones, and Cursor-on-Target output with Python bindings. The completeness picture is a finished single-radar classical stack and none of the multi-sensor or learned parts.
 
 ## How it was built, and who did what
 
-AI coding agents wrote almost all of the code, as stated at the top. All 11 commits, made between 16 and 23 October 2026, carry an AI co-author credit; the repository has no instruction files or settings folders for agents. Each commit is a milestone, a study or a README update, apart from one that removes a summary file added by mistake. The checks on the agents' work are visible in the repository: tests, consistency statistics, and documentation that records what was and was not tested.
+AI coding agents wrote almost all of the code, as stated at the top. All 11 commits, made between 16 and 23 October 2026, carry an AI co-author credit; the repository has no instruction files or settings folders for agents. Each commit is a milestone, a study or a README update, apart from one that removes a summary file added by mistake (I say it would have been a summary of the project). I carried context between sessions in the coding tool's context window or windows; there are no agent instruction files. The repository does not record who chose the score-based confirmation rule, the JPDA-with-IMM runs, or the stop to the JPDA search; I do not say, and the roadmap is still open. The checks on the agents' work are visible in the repository: tests, consistency statistics, and documentation that records what was and was not tested.
 
 ## For recruiters and interviewers
 
-In thirty seconds: I directed AI coding agents to build a radar tracking stack in Rust and measure each piece, with a fix for a clutter failure and a documented negative result for a more elaborate method. It is simulation only, and a learned-association comparison is planned but unbuilt.
+In thirty seconds: AI coding agents built a radar tracking stack in Rust, with each piece measured, with a fix for a clutter failure and a documented negative result for a more elaborate method. It is simulation only, and a learned-association comparison is planned but unbuilt.
 
 | Typical requirement | What the project shows | Strength |
 | --- | --- | --- |
@@ -180,9 +180,9 @@ In thirty seconds: I directed AI coding agents to build a radar tracking stack i
 | Software practice | 58 passing tests, formatting and lint checks in CI | Partly |
 | Deploying and operating | Nothing hosted, no real data | Not shown |
 
-The roles I am aiming at are AI engineer, forward-deployed AI engineer (an engineer placed with a customer) and applied AI or machine-learning engineer. Against those roles, this project gives little direct evidence: it has no machine-learning model and no customer setting. This guide's reading, not a statement from the author, is that the nearest match is applied AI or machine learning, because of the measured comparisons and the planned learned-association study. What not to claim: that it works on real radar, that it handles several sensor types, or that I wrote the code by hand.
+The project has no machine-learning model and no customer setting, and it is simulation only. What not to claim: that it works on real radar, that it handles several sensor types, or that I wrote the code by hand.
 
-Two questions I would expect are how I know the numbers (the JPDA output files are saved, and the tables have named commands that reproduce them) and why JPDA lost (the documentation offers untested explanations: a more permissive score that admits extra false tracks, and tracks collapsing together onto one target).
+I am unsure what was hardest or surprising, and whether the JPDA result surprised me. I need to learn more about the Kalman update, IMM mixing, JPDA event enumeration and OSPA/GOSPA, and I am unsure I could explain unaided why a 3-of-5 rule fails at 200 false echoes or why JPDA gave more identity switches. Two questions I would expect are how the numbers are known (the JPDA output files are saved, and the tables have named commands that reproduce them) and why JPDA lost (the documentation offers untested explanations: a more permissive score that admits extra false tracks, and tracks collapsing together onto one target).
 
 A five-minute demo: run the single-target example for the filter table, run the turning comparison, show the clutter table and the diagnosis, then the JPDA results file.
 

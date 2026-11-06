@@ -59,7 +59,7 @@ No learned models and no language-model or hosted-service calls anywhere. Nothin
 
 ## E8 Plan-versus-results and history
 
-All 11 commits between 2026-10-16 and 2026-10-23: v0.1 to v0.4 on 16 October (five commits within about 1 h 15 min on the author-date clock), JPDA milestone and later studies 21 and 23 October. The roadmap states "Each milestone ends with a measured result in the README"; no locked protocol, no success criteria written before results. A commit (1205eaa) removes PROJECT_SUMMARY.md "added by mistake; it is a local file"; the file's content was not inspected (Ask the author whether it held anything private; history still contains it). Commit credits: 11 of 11 carry the same AI co-author trailer; the guide names no tool.
+All 11 commits between 2026-10-16 and 2026-10-23: v0.1 to v0.4 on 16 October (five commits within about 1 h 15 min on the author-date clock), JPDA milestone and later studies 21 and 23 October. The roadmap states "Each milestone ends with a measured result in the README"; no locked protocol, no success criteria written before results. A commit (1205eaa) removes PROJECT_SUMMARY.md "added by mistake; it is a local file"; the file's content was not inspected (history still contains it; see the 2026-11-05 section for what it holds). Commit credits: 11 of 11 carry the same AI co-author trailer; the guide names no tool.
 
 ## E9 Gates and approvals
 
@@ -109,3 +109,24 @@ Self-review of draft: removed first-person claims of checking; replaced a gain f
 ## E17 Completeness and backlog
 
 Promised versus built: simulator, radar model, EKF, multi-target scenarios, Hungarian, GNN tracker, IMM, OSPA/GOSPA, JPDA (all built and tested, 0.1 to 0.4 done per roadmap); EO and RF sensors, out-of-sequence handling (0.5, planned); learned association comparison (0.6, planned); Cursor-on-Target output, Python bindings, replay viewer (0.7, planned). Backlog: Finish: none of the built items is unfinished. Fix: save outputs for the first four README tables. Improve: intervals and held-out seeds; mismatch scenarios. Add: coalescence-avoiding JPDA, second sensor, learned association. Next milestone per roadmap: 0.5. Whether to do these is for the author to decide.
+
+## Author answers folded in, 2026-11-05
+
+Source: answers appended to the 15 questions in fusetrack.questions.md. Label: Author says. Clone pulled (up to date). Guide edited; no repository change. His probable tool name (Q6) stays in the questions file only.
+
+- Q1: Started for a course interest, a job interest and the physical-AI portfolio family, primarily the last. Stated in his words; no detail about a course or job added.
+- Q2: Rust because it is growing in popularity and utility. Stated as his reason; the repository gives none.
+- Q3: Fine to describe counter-UAS only as the README does. Unchanged.
+- Q4: Nobody else has run, read or commented. Stated.
+- Q5: Knows of no recorded radar or public tracking data; will have to find some; thinks model or agent help is needed for the search. Stated.
+- Q6: Probable tool name given; not corroborated by the repository. Guide says only "AI coding agents"; no build tool named.
+- Q7: Still open on the roadmap; he did not say what he decided beyond the README and roadmap. Guide says the repository does not record who chose the score-based rule, JPDA with the IMM, or the stop to the JPDA search.
+- Q8: He says PROJECT_SUMMARY.md would have been a summary of the project. History check (git show 1205eaa^:PROJECT_SUMMARY.md, read-only; added in 3870eab, removed in 1205eaa; 413 lines): a plain-language project overview, repository layout, simulation and radar model, EKF, tracker, IMM, OSPA, tests, strengths, limitations and roadmap, matching the README content. Searched for secrets, tokens, emails, local paths, drive letters, employer or personal data: none found. It holds one evaluative sentence calling the project a strong portfolio demonstration. Nothing sensitive; no purge needed. Contents not copied into the guide. (The commit author line carries his name and email, as every commit does.)
+- Q9: Context carried in the coding tool's context window or windows. Stated without naming the tool.
+- Q10: Unsure what was hardest or surprising, and whether JPDA surprised him. Stated.
+- Q11: Needs to learn more about Kalman update, IMM mixing, JPDA event enumeration and OSPA/GOSPA. Stated.
+- Q12: Unsure he can explain unaided why 3-of-5 fails at 200 false echoes and why JPDA gave more identity switches. Stated plainly.
+- Q13: Not finished; time is not a concern; milestones 0.5 to 0.7 not chosen. Stated.
+- Q14: Defers to a recommendation on saving outputs and intervals for the first four tables. Stated as open.
+- Q15: Not sure whether the guide's role-fit reading is correct. Reading and target-role list removed; only factual statements remain (no ML model, no customer setting, simulation only).
+- Wording: removed "I directed the scope, plan, architecture and preferences", "I directed AI coding agents", "myself", "any scenario I tried", "no user other than me is known".
