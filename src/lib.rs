@@ -6,6 +6,8 @@
 //! ID-switch and fragmentation scoring. Additional sensors are on the roadmap (see `docs/roadmap.md`).
 
 pub mod assignment;
+#[cfg(feature = "cot")]
+pub mod cot;
 pub mod ekf;
 pub mod eval;
 pub mod imm;
