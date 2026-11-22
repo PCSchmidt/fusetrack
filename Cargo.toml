@@ -7,10 +7,15 @@ license = "MIT"
 repository = "https://github.com/PCSchmidt/fusetrack"
 readme = "README.md"
 
+[features]
+## Publish confirmed tracks as Cursor on Target events for TAK (`cot` module).
+cot = ["dep:uas-cot"]
+
 [dependencies]
 nalgebra = "0.33"
 rand = "0.8"
 rand_distr = "0.4"
+uas-cot = { version = "0.6", optional = true, default-features = false }
 
 [profile.test]
 opt-level = 3
